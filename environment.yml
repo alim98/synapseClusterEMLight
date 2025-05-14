@@ -1,0 +1,38 @@
+name: synapse2
+channels:
+  - defaults
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python
+  - pytorch>
+  - torchvision
+  # - cudatoolkit  
+  - numpy
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - scikit-image
+  - scipy
+  - tqdm
+  - pillow
+  - h5py
+  - jupyter
+  - ipykernel
+  - boltons
+  - pip
+
+  - pip:
+    - umap-learn
+    - plotly
+    - tensorboard 
+    - seaborn 
+    - imageio
+    - statsmodels
+    - openpyxl
+    - webknossos
+
+#conda env create -f environment.yml
+#conda activate synapse2
+#conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia -c pytorch-cuda

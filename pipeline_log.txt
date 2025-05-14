@@ -1,0 +1,415 @@
+Starting synapse analysis pipeline...
+Setting up configuration...
+Loading VGG3D model...
+Loading synapse data...
+Error in pipeline: Missing optional dependency 'openpyxl'.  Use pip or conda to install openpyxl.
+Traceback (most recent call last):
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\pandas\compat\_optional.py", line 135, in import_optional_dependency
+    module = importlib.import_module(name)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\importlib\__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 984, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'openpyxl'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\alim9\Documents\codes\synapse2\run_synapse_pipeline.py", line 882, in <module>
+    run_pipeline()
+  File "C:\Users\alim9\Documents\codes\synapse2\run_synapse_pipeline.py", line 852, in run_pipeline
+    vol_data_dict, syn_df = load_data()
+  File "C:\Users\alim9\Documents\codes\synapse2\run_synapse_pipeline.py", line 189, in load_data
+    syn_df = pd.concat([
+  File "C:\Users\alim9\Documents\codes\synapse2\run_synapse_pipeline.py", line 190, in <listcomp>
+    pd.read_excel(os.path.join(config.excel_file, f"{bbox}.xlsx")).assign(bbox_name=bbox)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\pandas\io\excel\_base.py", line 495, in read_excel
+    io = ExcelFile(
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\pandas\io\excel\_base.py", line 1567, in __init__
+    self._reader = self._engines[engine](
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\pandas\io\excel\_openpyxl.py", line 552, in __init__
+    import_optional_dependency("openpyxl")
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\pandas\compat\_optional.py", line 138, in import_optional_dependency
+    raise ImportError(msg)
+ImportError: Missing optional dependency 'openpyxl'.  Use pip or conda to install openpyxl.
+
+Starting synapse analysis pipeline...
+Setting up configuration...
+Loading VGG3D model...
+Loading synapse data...
+Loading manual annotations...
+Loaded 60 manually annotated samples
+Extracting stage-specific features from layer 20...
+Layer 20 is in Stage 3
+Extracted features for 7 synapses with 96 features
+Features saved to results/csv_outputs\all_synapses_features_layer20.csv
+Projecting features using UMAP...
+Using 96 features for projection
+Projection saved to results/csv_outputs\all_synapses_projection_umap.csv
+Visualizing UMAP projection with manual annotations...
+Visualization saved to results/clustering_results_final\all_synapses_umap_with_manual_clusters.png
+Creating detailed visualization with bbox information...
+Detailed visualization saved to results/clustering_results_final\all_synapses_umap_with_bbox_and_manual_clusters.png
+Clustering features into 10 clusters...
+Clustering saved to results/clustering_results_final\all_synapses_clustered_10.csv
+Visualizing manual vs. automatic clusters...
+Cluster comparison saved to results/clustering_results_final\manual_vs_auto_clusters_comparison.png
+Pipeline complete!
+Starting synapse analysis pipeline...
+Setting up configuration...
+Loading VGG3D model...
+Loading synapse data...
+Loading manual annotations...
+Loaded 60 manually annotated samples
+Extracting stage-specific features from layer 20...
+Layer 20 is in Stage 3
+Extracted features for 7 synapses with 96 features
+Features saved to results/csv_outputs\all_synapses_features_layer20.csv
+Projecting features using UMAP...
+Using 96 features for projection
+Projection saved to results/csv_outputs\all_synapses_projection_umap.csv
+Visualizing UMAP projection with manual annotations...
+Visualization saved to results/clustering_results_final\all_synapses_umap_with_manual_clusters.png
+Creating detailed visualization with bbox information...
+Detailed visualization saved to results/clustering_results_final\all_synapses_umap_with_bbox_and_manual_clusters.png
+Clustering features into 10 clusters...
+Clustering saved to results/clustering_results_final\all_synapses_clustered_10.csv
+Visualizing manual vs. automatic clusters...
+Cluster comparison saved to results/clustering_results_final\manual_vs_auto_clusters_comparison.png
+Pipeline complete!
+Starting synapse analysis pipeline...
+Setting up configuration...
+Loading VGG3D model...
+Loading synapse data...
+Loading manual annotations...
+Loaded 60 manually annotated samples
+Extracting stage-specific features from layer 20...
+Layer 20 is in Stage 3
+Extracted features for 7 synapses with 96 features
+Features saved to results/csv_outputs\all_synapses_features_layer20.csv
+Projecting features using UMAP...
+Using 96 features for projection
+Projection saved to results/csv_outputs\all_synapses_projection_umap.csv
+Visualizing UMAP projection with manual annotations...
+Visualization saved to results/clustering_results_final\all_synapses_umap_with_manual_clusters.png
+Creating detailed visualization with bbox information...
+Detailed visualization saved to results/clustering_results_final\all_synapses_umap_with_bbox_and_manual_clusters.png
+Clustering features into 10 clusters...
+Clustering saved to results/clustering_results_final\all_synapses_clustered_10.csv
+Visualizing manual vs. automatic clusters...
+Cluster comparison saved to results/clustering_results_final\manual_vs_auto_clusters_comparison.png
+Pipeline complete!
+Starting synapse analysis pipeline...
+Setting up configuration...
+Loading VGG3D model...
+Loading synapse data...
+Loading manual annotations...
+Loaded 60 manually annotated samples
+Extracting stage-specific features from layer 20...
+Layer 20 is in Stage 3
+Extracted features for 7 synapses with 96 features
+Features saved to results/csv_outputs\all_synapses_features_layer20.csv
+Projecting features using UMAP...
+Using 96 features for projection
+Projection saved to results/csv_outputs\all_synapses_projection_umap.csv
+Visualizing UMAP projection with manual annotations...
+Visualization saved to results/clustering_results_final\all_synapses_umap_with_manual_clusters.png
+Creating detailed visualization with bbox information...
+Detailed visualization saved to results/clustering_results_final\all_synapses_umap_with_bbox_and_manual_clusters.png
+Clustering features into 10 clusters...
+Clustering saved to results/clustering_results_final\all_synapses_clustered_10.csv
+Visualizing manual vs. automatic clusters...
+Cluster comparison saved to results/clustering_results_final\manual_vs_auto_clusters_comparison.png
+Pipeline complete!
+
+--- Starting pipeline run at 2025-04-09 21:48:54 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+
+--- Starting pipeline run at 2025-04-09 21:50:23 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+
+--- Starting pipeline run at 2025-04-13 18:35:21 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-04-13 19:28:22 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: concat_avg_max
+
+--- Starting pipeline run at 2025-04-16 14:20:56 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-04-16 15:11:06 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: spp
+
+--- Starting pipeline run at 2025-04-16 15:32:01 ---
+Running with configuration:
+  Segmentation Type: 10
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: concat_avg_max
+
+--- Starting pipeline run at 2025-04-20 11:22:10 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-04-20 12:15:45 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: max
+
+--- Starting pipeline run at 2025-04-20 12:45:08 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: concat_avg_max
+
+--- Starting pipeline run at 2025-04-22 12:08:09 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-04-22 12:43:52 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: max
+
+--- Starting pipeline run at 2025-04-22 13:21:09 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: concat_avg_max
+
+--- Starting pipeline run at 2025-04-22 17:44:40 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: simple_avg
+
+--- Starting pipeline run at 2025-04-22 17:59:32 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: simple_avg
+
+--- Starting pipeline run at 2025-04-22 18:50:17 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: simple_avg
+
+--- Starting pipeline run at 2025-04-22 18:51:08 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: simple_avg
+  Batch Size: 2
+
+--- Starting pipeline run at 2025-04-22 18:58:36 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: simple_avg
+  Batch Size: 2
+
+--- Starting pipeline run at 2025-04-22 19:17:27 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-07 21:22:46 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-07 21:45:45 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+Running pipeline with connectome data sampling...
+  Batch size: 2
+  Policy: dummy
+  Verbose: True
+Creating ConnectomeDataset with policy: dummy
+Extracting features...
+Using patched standard feature extraction
+Error during pipeline execution: Given groups=1, weight of size [24, 1, 3, 3, 3], expected input[2, 80, 1, 80, 80] to have 1 channels, but got 80 channels instead
+Traceback (most recent call last):
+  File "C:\Users\alim9\Documents\codes\synapse2\run_synapse_pipeline_with_sampling.py", line 190, in run_pipeline_with_connectome
+    pipeline.features_df = patch_extract_features(
+  File "C:\Users\alim9\Documents\codes\synapse2\inference_patch.py", line 202, in patch_extract_features
+    batch_features = model.features(inputs)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\torch\nn\modules\container.py", line 250, in forward
+    input = module(input)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\torch\nn\modules\conv.py", line 725, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\torch\nn\modules\conv.py", line 720, in _conv_forward
+    return F.conv3d(
+RuntimeError: Given groups=1, weight of size [24, 1, 3, 3, 3], expected input[2, 80, 1, 80, 80] to have 1 channels, but got 80 channels instead
+
+Running pipeline with connectome data sampling...
+  Batch size: 2
+  Policy: dummy
+  Verbose: True
+Creating ConnectomeDataset with policy: dummy
+Extracting features...
+Using patched standard feature extraction
+Features saved to results\run_2025-05-07_22-45-00\features\features_2025-05-07_22-45-00.csv
+Clustering features...
+Error during pipeline execution: zero-size array to reduction operation maximum which has no identity
+Traceback (most recent call last):
+  File "C:\Users\alim9\Documents\codes\synapse2\run_synapse_pipeline_with_sampling.py", line 204, in run_pipeline_with_connectome
+    pipeline.cluster_features()
+  File "C:\Users\alim9\Documents\codes\synapse2\synapse_pipeline.py", line 214, in cluster_features
+    result = run_clustering_analysis(self.features_df, output_dir)
+  File "C:\Users\alim9\Documents\codes\synapse2\inference.py", line 810, in run_clustering_analysis
+    umap_results = apply_umap(features_df[feature_cols])
+  File "C:\Users\alim9\Documents\codes\synapse2\inference.py", line 956, in apply_umap
+    embedding = reducer.fit_transform(features)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\umap\umap_.py", line 2928, in fit_transform
+    self.fit(X, y, force_all_finite, **kwargs)
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\umap\umap_.py", line 2817, in fit
+    self.embedding_, aux_data = self._fit_embed_data(
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\umap\umap_.py", line 2865, in _fit_embed_data
+    return simplicial_set_embedding(
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\umap\umap_.py", line 1089, in simplicial_set_embedding
+    graph.data[graph.data < (graph.data.max() / float(n_epochs_max))] = 0.0
+  File "C:\Users\alim9\.conda\envs\synapse2\lib\site-packages\numpy\_core\_methods.py", line 44, in _amax
+    return umr_maximum(a, axis, None, out, keepdims, initial, where)
+ValueError: zero-size array to reduction operation maximum which has no identity
+
+
+--- Starting pipeline run at 2025-05-08 11:21:23 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-08 11:25:50 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-08 13:31:28 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-08 13:33:47 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-14 09:46:19 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-14 10:02:27 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-14 10:05:22 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-14 10:05:59 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: avg
+
+--- Starting pipeline run at 2025-05-14 10:06:42 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: standard
+  Pooling Method: avg

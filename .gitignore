@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+data/
+data2/
+data3/
+csv_outputs/
+gifs/
+clustering_results_final/
+analysis_images/
+output_html/
+results/
+*.log
+*.png
+*.gif
+*.jpg
+*.tif
+*.csv
+*.xlsx
+*.checkpoint
+
+# DO NOT ignore assets directory and its contents
+!assets/
+!assets/* 
+newdl/crop_comparison/bbox3_non_spine_synapse_008_info.txt
+newdl/crop_comparison/bbox3_non_spine_synapse_008_info_normalized.txt
+newdl/crop_comparison/bbox3_non_spine_synapse_009_info.txt
+newdl/crop_comparison/bbox3_non_spine_synapse_009_info_normalized.txt
+newdl/crop_comparison/final/
+newdl/crop_comparison/final2/
+newdl/crop_comparison/preprocessing.7z
+newdl/crop_comparison/preprocessing/
+comparison_results3/
+synapse/gif_umap - Copy/
+test_output/*
+test_output_real/*
+contrastive/checkpoints/*
+contrastive/results/*
+contrastive/logs/*
+contrastive/gif_umap/*
+*.rar
+*.ps1
+resnet/*
+synapse/test/*
+MedicalNet/*
+MedicalNet
