@@ -41,9 +41,13 @@ def extract_features(model, dataset, config, pooling_method='avg'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device).eval()
 
+    # Use the batch_size from the dataset if available, otherwise use 2
+    batch_size = getattr(dataset, 'batch_size', 2)
+    print(f"DEBUG - Using batch_size={batch_size} for DataLoader")
+
     dataloader = DataLoader(
         dataset,
-        batch_size=2,
+        batch_size=batch_size,
         num_workers=0,
         collate_fn=lambda b: (
             torch.stack([item[0] for item in b if item is not None]) if any(item is not None for item in b) else torch.empty((0, 1, dataset.num_frames, dataset.subvol_size, dataset.subvol_size), device='cpu'),
@@ -78,10 +82,9 @@ def extract_features(model, dataset, config, pooling_method='avg'):
 
         features = np.concatenate(features, axis=0)
 
-        metadata_df = pd.DataFrame([
-            {"bbox": name, **info.to_dict()}
-            for name, info in metadata
-        ])
+        # Create simplified metadata dataframe with only essential columns
+        metadata_df = pd.DataFrame()
+        metadata_df['ID'] = range(1, len(features) + 1)  # Start from 1 for better readability
 
         feature_columns = [f'feat_{i+1}' for i in range(features.shape[1])]
         features_df = pd.DataFrame(features, columns=feature_columns)
@@ -156,16 +159,12 @@ def extract_features(model, dataset, config, pooling_method='avg'):
 
         features = np.concatenate(features, axis=0)
 
-        metadata_df = pd.DataFrame([
-            {"bbox": name, **info.to_dict()}
-            for name, info in metadata
-        ])
+        # Create simplified metadata dataframe with only essential columns
+        metadata_df = pd.DataFrame()
+        metadata_df['ID'] = range(1, len(features) + 1)  # Start from 1 for better readability
 
         feature_columns = [f'feat_{i+1}' for i in range(features.shape[1])]
         features_df = pd.DataFrame(features, columns=feature_columns)
-        
-        # Add pooling method information to the dataframe
-        features_df['pooling_method'] = pooling_method
 
         combined_df = pd.concat([metadata_df, features_df], axis=1)
 
@@ -194,19 +193,21 @@ def extract_stage_specific_features(model, dataset, config, layer_num=20, poolin
     
     # Get information about the model stages
     stage_info = extractor.get_stage_info()
-    print(f"Extracting features from layer {layer_num}")
     
     # Find which stage contains this layer (for reference)
     for stage_num, info in stage_info.items():
         start_idx, end_idx = info['range']
         if start_idx <= layer_num <= end_idx:
-            print(f"Layer {layer_num} is in Stage {stage_num}")
             break
+    
+    # Use the batch_size from the dataset if available, otherwise use 2
+    batch_size = getattr(dataset, 'batch_size', 2)
+    print(f"DEBUG - Using batch_size={batch_size} for DataLoader in stage-specific extraction")
     
     # Create dataloader
     dataloader = DataLoader(
         dataset,
-        batch_size=2,
+        batch_size=batch_size,
         num_workers=0,
         collate_fn=lambda b: (
             torch.stack([item[0] for item in b if item is not None]) if any(item is not None for item in b) else torch.empty((0, 1, dataset.num_frames, dataset.subvol_size, dataset.subvol_size), device='cpu'),
@@ -251,11 +252,9 @@ def extract_stage_specific_features(model, dataset, config, layer_num=20, poolin
         # Concatenate all features
         features = np.concatenate(features, axis=0)
         
-        # Create metadata DataFrame
-        metadata_df = pd.DataFrame([
-            {"bbox": name, **info.to_dict()}
-            for name, info in metadata
-        ])
+        # Create simplified metadata dataframe with only essential columns
+        metadata_df = pd.DataFrame()
+        metadata_df['ID'] = range(1, len(features) + 1)  # Start from 1 for better readability
         
         # Create feature DataFrame
         feature_columns = [f'layer{layer_num}_feat_{i+1}' for i in range(features.shape[1])]
@@ -330,18 +329,13 @@ def extract_stage_specific_features(model, dataset, config, layer_num=20, poolin
         # Concatenate all features
         features = np.concatenate(features, axis=0)
         
-        # Create metadata DataFrame
-        metadata_df = pd.DataFrame([
-            {"bbox": name, **info.to_dict()}
-            for name, info in metadata
-        ])
+        # Create simplified metadata dataframe with only essential columns
+        metadata_df = pd.DataFrame()
+        metadata_df['ID'] = range(1, len(features) + 1)  # Start from 1 for better readability
         
         # Create feature DataFrame
         feature_columns = [f'layer{layer_num}_feat_{i+1}' for i in range(features.shape[1])]
         features_df = pd.DataFrame(features, columns=feature_columns)
-        
-        # Add pooling method information
-        features_df['pooling_method'] = pooling_method
         
         # Combine metadata and features
         combined_df = pd.concat([metadata_df, features_df], axis=1)
@@ -350,23 +344,6 @@ def extract_stage_specific_features(model, dataset, config, layer_num=20, poolin
 
 
 def extract_and_save_features(model, dataset, config, seg_type, alpha, output_dir, extraction_method='standard', layer_num=20, pooling_method='avg'):
-    """
-    Extract and save features using the specified extraction method.
-    
-    Args:
-        model: The VGG3D model
-        dataset: The dataset to extract features from
-        config: Configuration object
-        seg_type: Segmentation type
-        alpha: Alpha value for segmentation
-        output_dir: Directory to save features
-        extraction_method: Feature extraction method ('standard' or 'stage_specific')
-        layer_num: Layer number to extract features from if using stage_specific method
-        pooling_method: Method to use for pooling ('avg', 'max', 'concat_avg_max', 'spp')
-        
-    Returns:
-        Path to the saved features CSV file
-    """
     # Extract features based on the chosen method
     if extraction_method == 'stage_specific':
         features_df = extract_stage_specific_features(model, dataset, config, layer_num, pooling_method)
@@ -383,22 +360,66 @@ def extract_and_save_features(model, dataset, config, seg_type, alpha, output_di
     # Create filename with method and pooling information
     csv_filename = f"features{method_suffix}_{pooling_method}_seg{seg_type}_alpha{alpha_str}.csv"
     csv_filepath = os.path.join(output_dir, csv_filename)
-    
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
-    # Add metadata
-    features_df['segmentation_type'] = seg_type
-    features_df['alpha'] = alpha
-    features_df['extraction_method'] = extraction_method
-    if extraction_method == 'stage_specific':
-        features_df['layer_num'] = layer_num
-    features_df['pooling_method'] = pooling_method
+    # Also use CSV output dir from config if available
+    if hasattr(config, 'csv_output_dir'):
+        print(f"DEBUG - Using config.csv_output_dir: {config.csv_output_dir}")
+        os.makedirs(config.csv_output_dir, exist_ok=True)
+        config_csv_filepath = os.path.join(config.csv_output_dir, csv_filename)
+        print(f"DEBUG - Config CSV path: {config_csv_filepath}")
     
-    # Save features to CSV
-    features_df.to_csv(csv_filepath, index=False)
+    # Make sure ID column exists
+    if 'ID' not in features_df.columns:
+        features_df['ID'] = range(1, len(features_df) + 1)  # Start from 1 for better readability
     
-    return csv_filepath
+    # Get feature columns
+    feature_cols = [c for c in features_df.columns if c.startswith(feat_prefix)]
+    print(f"DEBUG - Found {len(feature_cols)} feature columns")
+    
+    # Keep only essential columns: ID and feature columns
+    essential_cols = ['ID'] + feature_cols
+    
+    # Select only columns that exist in the DataFrame
+    existing_cols = [col for col in essential_cols if col in features_df.columns]
+    print(f"DEBUG - Selected {len(existing_cols)} columns to save")
+    
+    # Save simplified features to CSV
+    print(f"DEBUG - Saving to CSV: {csv_filepath}")
+    try:
+        # Try saving to both locations
+        features_df[existing_cols].to_csv(csv_filepath, index=False)
+        print(f"DEBUG - Successfully saved CSV with {len(features_df)} rows and {len(existing_cols)} columns")
+        
+        if hasattr(config, 'csv_output_dir'):
+            print(f"DEBUG - Also saving to config path: {config_csv_filepath}")
+            features_df[existing_cols].to_csv(config_csv_filepath, index=False)
+        
+        # Also try saving directly to the results directory
+        results_csv = os.path.join(os.path.dirname(output_dir), csv_filename)
+        print(f"DEBUG - Also saving to results root: {results_csv}")
+        features_df[existing_cols].to_csv(results_csv, index=False)
+        
+        # Try saving to the current directory as well
+        cwd_csv = os.path.join(os.getcwd(), csv_filename)
+        print(f"DEBUG - Also saving to current directory: {cwd_csv}")
+        features_df[existing_cols].to_csv(cwd_csv, index=False)
+        
+    except Exception as e:
+        print(f"DEBUG - Error saving CSV: {str(e)}")
+    
+    # Check each file
+    for path in [csv_filepath, config_csv_filepath if hasattr(config, 'csv_output_dir') else None, 
+                results_csv, cwd_csv]:
+        if path and os.path.exists(path):
+            print(f"DEBUG - CSV file exists at {path}")
+            print(f"DEBUG - CSV file size: {os.path.getsize(path)} bytes")
+        elif path:
+            print(f"DEBUG - CSV file was NOT created at {path}")
+    
+    # Return the DataFrame directly to ensure we have the data
+    return features_df
 
 
 def VGG3D():

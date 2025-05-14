@@ -21,6 +21,10 @@ class SynapseConfig:
         self.clustering_output_dir = 'results/clustering_results_final'
         self.report_output_dir = 'results/comprehensive_reports'
         
+        # Connectome dataset parameters
+        self.connectome_num_samples = 10  # Total number of samples to read from connectome
+        self.connectome_batch_size = 10  # Batch size for model inference
+        
         # Clustering parameters
         self.clustering_algorithm = 'KMeans'  # Default clustering algorithm
         self.n_clusters = 10 # Default number of clusters for KMeans
@@ -64,6 +68,12 @@ class SynapseConfig:
                            help='Gray color value (0-1) for overlaying segmentation')
         parser.add_argument('--clustering_output_dir', type=str, default=self.clustering_output_dir)
         parser.add_argument('--report_output_dir', type=str, default=self.report_output_dir)
+        
+        # Connectome dataset parameters
+        parser.add_argument('--connectome_num_samples', type=int, default=self.connectome_num_samples,
+                           help='Total number of samples to read from connectome dataset')
+        parser.add_argument('--connectome_batch_size', type=int, default=self.connectome_batch_size,
+                           help='Batch size for model inference (how many samples to process at once)')
         
         # Clustering parameters
         parser.add_argument('--clustering_algorithm', type=str, default=self.clustering_algorithm,

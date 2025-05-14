@@ -34,8 +34,11 @@ def patch_extract_stage_specific_features(model, dataset, config, layer_num=20, 
     model.to(device)
     model.eval()
     
+    # Use the batch_size from the dataset if available, otherwise use a default
+    batch_size = getattr(dataset, 'batch_size', 2)
+    print(f"Using batch_size={batch_size} for DataLoader in stage-specific extraction")
+    
     # Create dataloader
-    batch_size = 2
     dataloader = torch.utils.data.DataLoader(
         dataset, 
         batch_size=batch_size, 
@@ -111,9 +114,13 @@ def patch_extract_features(model, dataset, config, pooling_method='avg'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device).eval()
 
+    # Use the batch_size from the dataset if available, otherwise use a default
+    batch_size = getattr(dataset, 'batch_size', 2)
+    print(f"Using batch_size={batch_size} for DataLoader in feature extraction")
+    
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=2,
+        batch_size=batch_size,
         num_workers=0,
         collate_fn=lambda b: (
             torch.stack([item[0] for item in b if item is not None]) if any(item is not None for item in b) else torch.empty((0, 1, dataset.num_frames, dataset.subvol_size, dataset.subvol_size), device='cpu'),

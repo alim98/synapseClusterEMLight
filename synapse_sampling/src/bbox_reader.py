@@ -1,3 +1,4 @@
+
 import numpy as np
 import h5py
 import webknossos as wk
@@ -25,15 +26,16 @@ class BboxReader():
         self.VOXEL_SIZE = np.array(voxel_size)
         self.SPACING = spacing
         self.BBOX_SIZE = np.array(bbox_size)
-        #Replaced match with if-statements(for version compatibility)
-        if bbox_unit_scale in ["µm", "um"]:  # Handle both "µm" and "um"
-            self.BBOX_UNIT_SCALE = 1e3  # Convert µm to nm
-        elif bbox_unit_scale == "nm":
-            self.BBOX_UNIT_SCALE = 1    # Already in nm
-        elif bbox_unit_scale == "vox":
-            self.BBOX_UNIT_SCALE = self.VOXEL_SIZE[0]    # Default to voxel units
-        else:
-            raise ValueError(f"Unknown unit scale: {bbox_unit_scale}. Use 'µm', 'nm', or 'vox'.")
+
+        match bbox_unit_scale:
+            case "µm" | "um":  # Handle both "µm" and "um"
+                self.BBOX_UNIT_SCALE = 1e3  # Convert µm to nm
+            case "nm":
+                self.BBOX_UNIT_SCALE = 1    # Already in nm
+            case "vox":
+                self.BBOX_UNIT_SCALE = self.VOXEL_SIZE[0]    # Default to voxel units
+            case _:
+                raise ValueError(f"Unknown unit scale: {bbox_unit_scale}. Use 'µm', 'nm', or 'vox'.")
 
         self.update_vox_size()
 
@@ -98,7 +100,6 @@ class BboxReader():
         if np.any(start < 0): print("Bbox start position is out of bounds.")
         return mag.read(absolute_offset=start.astype(int), size=self.BBOX_SIZE_VOX.astype(int))
     
-
 
 
 

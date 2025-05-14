@@ -1,37 +1,17 @@
 import numpy as np
 import h5py
-import os
 from typing import Tuple, Iterable
 from tqdm import tqdm
 
-# Fix imports to use relative imports
-from src.bbox_reader import BboxReader
-from src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes
+from synapse_sampling.src.bbox_reader import BboxReader
+from synapse_sampling.src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes
 
 
-# Original paths
-ORIGINAL_CONNECTOME_PATH = "/nexus/posix0/MBR-neuralsystems/vx/artifacts/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v1/create_connectome/connectome__34fa6f477d-v1/connectome/connectome.hdf5"
-ORIGINAL_SYNAPSE_PREDICTION_DATASET_PATH = "/nexus/posix0/MBR-neuralsystems/vx/artifacts/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v1/predict/merlin_synapse_model_v8a_synapse_prediction_v1-v1/prediction"
-ORIGINAL_AGGLO_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v2_nuclei_exclusion_with_meshes_full_dataset/segmentation/agglomerates/agglomerate_view_60.hdf5'
-ORIGINAL_RAW_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_extended_v2_nuclei_exclusion_with_meshes/'
-ORIGINAL_SEG_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v2_nuclei_exclusion_with_meshes_full_dataset/'
-
-# Determine if we need to use fallback paths
-if os.path.exists(ORIGINAL_CONNECTOME_PATH):
-    CONNECTOME_PATH = ORIGINAL_CONNECTOME_PATH
-    SYNAPSE_PREDICTION_DATASET_PATH = ORIGINAL_SYNAPSE_PREDICTION_DATASET_PATH
-    AGGLO_PATH = ORIGINAL_AGGLO_PATH
-    RAW_PATH = ORIGINAL_RAW_PATH
-    SEG_PATH = ORIGINAL_SEG_PATH
-    print("Using original data paths")
-else:
-    # Fallback to dummy paths - will use policy="dummy" automatically
-    print("Original paths not found. Using dummy data mode.")
-    CONNECTOME_PATH = ""
-    SYNAPSE_PREDICTION_DATASET_PATH = ""
-    AGGLO_PATH = ""
-    RAW_PATH = ""
-    SEG_PATH = ""
+CONNECTOME_PATH = "/nexus/posix0/MBR-neuralsystems/vx/artifacts/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v1/create_connectome/connectome__34fa6f477d-v1/connectome/connectome.hdf5"
+SYNAPSE_PREDICTION_DATASET_PATH = path = "/nexus/posix0/MBR-neuralsystems/vx/artifacts/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v1/predict/merlin_synapse_model_v8a_synapse_prediction_v1-v1/prediction"
+AGGLO_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v2_nuclei_exclusion_with_meshes_full_dataset/segmentation/agglomerates/agglomerate_view_60.hdf5'
+RAW_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_extended_v2_nuclei_exclusion_with_meshes/'
+SEG_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v2_nuclei_exclusion_with_meshes_full_dataset/'
 
 # Hardcoded plexiform bboxes from Dom
 plexiform_bboxes = [
@@ -63,24 +43,18 @@ def sample_connectome(batch_size=1, policy="random", connectome_path=CONNECTOME_
 
     global positions, agglo_ids
 
-    # Always use dummy data if paths aren't available
-    if not os.path.exists(connectome_path) or policy == "dummy":
-        return np.zeros((batch_size, 3), dtype=np.uint32), np.ones((batch_size,), dtype=np.uint32)
+    if policy == "dummy":
+        return np.zeros((batch_size, 3), dtype=np.uint32)
 
     # load only once    
-    if positions is None:
-        try:
-            with h5py.File(connectome_path, 'r') as f:
-                positions = f['synapse_positions'][:]
-                agglo_ids = f['synapse_to_src_agglomerate'][:]
-            
-            mask = get_point_mask_in_boxes(positions, plexiform_bboxes)
-            positions = positions[mask]
-            agglo_ids = agglo_ids[mask]
-        except Exception as e:
-            print(f"Error loading connectome: {e}")
-            print("Falling back to dummy data")
-            return np.zeros((batch_size, 3), dtype=np.uint32), np.ones((batch_size,), dtype=np.uint32)
+    if not positions:
+        with h5py.File(connectome_path, 'r') as f:
+            positions = f['synapse_positions'][:]
+            agglo_ids = f['synapse_to_src_agglomerate'][:]
+        
+        mask = get_point_mask_in_boxes(positions, plexiform_bboxes)
+        positions = positions[mask]
+        agglo_ids = agglo_ids[mask]
 
     if policy == "random":
         # Sample random indices
@@ -108,110 +82,54 @@ def get_synapse_data(position: Iterable,
     Returns:
         Tuple[np.ndarray, np.ndarray]: A tuple containing the raw data and the mask of the pre-synaptic agglomeration and the cleft bot with shape (1, 80, 80, 80).
     """
-    # Check if paths exist, if not, return dummy data
-    if not os.path.exists(synapse_prediction_dataset_path) or not os.path.exists(raw_path) or not os.path.exists(seg_path) or not os.path.exists(agglo_path):
-        print("Paths not found, using dummy data")
-        # Return random 80x80x80 volumes
-        dummy_raw = np.random.randint(0, 256, size=(1, 80, 80, 80), dtype=np.uint8)
-        
-        # Create a simple mask (a central sphere)
-        y, x, z = np.ogrid[0:80, 0:80, 0:80]
-        center_x, center_y, center_z = 40, 40, 40
-        dummy_mask = ((x - center_x)**2 + (y - center_y)**2 + (z - center_z)**2 <= 20**2).astype(np.uint8)[np.newaxis, ...]
-        
-        return dummy_raw, dummy_mask
-        
-    try:
-        # get dataset layer
-        layer_name = "segment_types_task$non-spine-head-synapse"
-        mag = get_dataset_layer_mag(synapse_prediction_dataset_path, layer_name, 1)
+    # get dataset layer
+    layer_name = "segment_types_task$non-spine-head-synapse"
+    mag = get_dataset_layer_mag(synapse_prediction_dataset_path, layer_name, 1)
 
-        # get synapse mask
-        bbox_size = np.array([80, 80, 80])
-        center = position
-        synapse = read_mag_bbox_data(mag, center, bbox_size)
-        synapse_threshold = 100
-        synapse_mask = synapse > synapse_threshold
+    # get synapse mask
+    bbox_size = np.array([80, 80, 80])
+    center = position
+    synapse = read_mag_bbox_data(mag, center, bbox_size)
+    synapse_threshold = 100
+    synapse_mask = synapse > synapse_threshold
 
-        # get pre-synapse agglomeration mask
-        reader = BboxReader(bbox_size=np.array([80, 80, 80]), bbox_unit_scale='vox', raw_path=raw_path, seg_path=seg_path, agglo_path=agglo_path)
-        raw, agglo = reader.read_bbox_agglo_data(position, 1)
-        pre_agglo_mask = (agglo == src_agglo_id).astype(np.uint8)
-        
-        # merge synapse mask with agglomeration
-        full_mask = pre_agglo_mask | filter_non_center_components(synapse_mask.squeeze())[None, ...]
-
-        return raw, full_mask
+    # get pre-synapse agglomeration mask
+    reader = BboxReader(bbox_size=np.array([80, 80, 80]), bbox_unit_scale='vox', raw_path=raw_path, seg_path=seg_path, agglo_path=agglo_path)
+    raw, agglo = reader.read_bbox_agglo_data(position, 1)
+    pre_agglo_mask = (agglo == src_agglo_id).astype(np.uint8)
     
-    except Exception as e:
-        print(f"Error getting synapse data: {e}")
-        print("Falling back to dummy data")
-        
-        # Return random 80x80x80 volumes
-        dummy_raw = np.random.randint(0, 256, size=(1, 80, 80, 80), dtype=np.uint8)
-        
-        # Create a simple mask (a central sphere)
-        y, x, z = np.ogrid[0:80, 0:80, 0:80]
-        center_x, center_y, center_z = 40, 40, 40
-        dummy_mask = ((x - center_x)**2 + (y - center_y)**2 + (z - center_z)**2 <= 20**2).astype(np.uint8)[np.newaxis, ...]
-        
-        return dummy_raw, dummy_mask
+    # merge synapse mask with agglomeration
+    full_mask = pre_agglo_mask | filter_non_center_components(synapse_mask.squeeze())[None, ...]
+
+    return raw, full_mask
 
 def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.ndarray, np.ndarray]:
     """
     Sample synapse raw em data and pre-synaptic agglomeration + cleft mask for a given batch size and policy.
     """
-    # Check if paths exist, if not, use dummy policy
-    if not os.path.exists(CONNECTOME_PATH) and policy != "dummy":
-        print("Original paths not found. Forcing dummy data mode.")
-        policy = "dummy"
-        
+    print(f"DEBUG - sample_synapses called with batch_size={batch_size}, policy={policy}")
+    
     if policy == "dummy":
-        if verbose: print(f"Creating {batch_size} dummy synapse boxes...")
-        
-        # Create random raw data (grayscale cubes with some noise)
-        raw = np.random.randint(0, 256, size=(batch_size, 1, 80, 80, 80), dtype=np.uint8)
-        
-        # Create masks (central spheres)
-        mask = np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8)
-        for i in range(batch_size):
-            # Create a random sphere in the cube
-            y, x, z = np.ogrid[0:80, 0:80, 0:80]
-            # Center of the cube
-            center_x, center_y, center_z = 40, 40, 40
-            # Random offset from center
-            center_offset = np.random.randint(-10, 10, size=3)
-            # Random radius between 15 and 25
-            radius = np.random.randint(15, 25)
-            # Create sphere mask
-            sphere_mask = ((x - center_x - center_offset[0])**2 + 
-                           (y - center_y - center_offset[1])**2 + 
-                           (z - center_z - center_offset[2])**2 <= radius**2)
-            mask[i, 0] = sphere_mask.astype(np.uint8)
-        
-        return raw, mask
+        print(f"DEBUG - Using dummy data with shape ({batch_size}, 1, 80, 80, 80)")
+        return np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8) 
     else:
-        try:
-            positions, agglo_ids = sample_connectome(batch_size, policy)
-            raw = []
-            mask = []
-            if verbose: print(f"Reading and Masking {batch_size} synapse boxes...")
-            wrapper = lambda x: tqdm(x, total=batch_size) if verbose else x
-            for position, src_agglo_id in wrapper(zip(positions, agglo_ids)):
-                r, m = get_synapse_data(position, src_agglo_id)
-                raw.append(r)
-                mask.append(m)
-            raw = np.stack(raw, axis=0)
-            mask = np.stack(mask, axis=0)
-            return raw, mask
-        except Exception as e:
-            print(f"Error in sample_synapses: {e}")
-            print("Falling back to dummy data")
-            return sample_synapses(batch_size, "dummy", verbose)
+        positions, agglo_ids = sample_connectome(batch_size, policy)
+        raw = []
+        mask = []
+        if verbose: print(f"Reading and Masking {batch_size} synapse boxes...")
+        wrapper = lambda x: tqdm(x, total=batch_size) if verbose else x
+        for position, src_agglo_id in wrapper(zip(positions, agglo_ids)):
+            r, m = get_synapse_data(position, src_agglo_id)
+            raw.append(r)
+            mask.append(m)
+        raw = np.stack(raw, axis=0)
+        mask = np.stack(mask, axis=0)
+        print(f"DEBUG - Returning data with shape: raw={raw.shape}, mask={mask.shape}")
+        return raw, mask
     
 
 if __name__ == "__main__":
     # Test the functions
-    raw, mask = sample_synapses(batch_size=10, policy="dummy", verbose=True)
+    raw, mask = sample_synapses(batch_size=10, policy="random", verbose=True)
     print("Raw shape:", raw.shape)
     print("Mask shape:", mask.shape)

@@ -97,14 +97,14 @@ def run_pipeline_with_connectome(config, timestamp):
     os.makedirs(results_base_dir, exist_ok=True)
     
     
-    csv_dir = os.path.join(results_base_dir, "csv_outputs")
-    clustering_dir = os.path.join(results_base_dir, "clustering_results")
-    gifs_dir = os.path.join(results_base_dir, "gifs")
-    visualization_dir = os.path.join(results_base_dir, "visualizations")
+    # csv_dir = os.path.join(results_base_dir, "csv_outputs")
+    # clustering_dir = os.path.join(results_base_dir, "clustering_results")
+    # gifs_dir = os.path.join(results_base_dir, "gifs")
+    # visualization_dir = os.path.join(results_base_dir, "visualizations")
     features_dir = os.path.join(results_base_dir, "features")
     
     
-    for directory in [csv_dir, clustering_dir, gifs_dir, visualization_dir, features_dir]:
+    for directory in [ features_dir]:
         os.makedirs(directory, exist_ok=True)
     
     

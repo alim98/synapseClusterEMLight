@@ -46,20 +46,17 @@ class SynapseSamplingDataset(torch.utils.data.Dataset):
         self.alpha = alpha
         self.verbose = verbose
         
-        
+        # Generate samples
         if self.verbose:
             print(f"Generating {batch_size} samples using {policy} policy...")
         self.raw_data, self.masks = sample_synapses(batch_size=batch_size, policy=policy, verbose=verbose)
         
-        
+        # Create minimal metadata
         self.metadata = []
         for i in range(batch_size):
             self.metadata.append({
                 'bbox_name': f'sample_{i}',
-                'central_coord_1': 40,  
-                'central_coord_2': 40,
-                'central_coord_3': 40,
-                'Var1': i  
+                'Var1': i
             })
         
         if self.verbose:
@@ -69,33 +66,31 @@ class SynapseSamplingDataset(torch.utils.data.Dataset):
         return len(self.raw_data)
 
     def __getitem__(self, idx):
-        
+        # Get raw data and mask
         raw = self.raw_data[idx]
         mask = self.masks[idx]
         
-        
-        
+        # Blend raw and mask using alpha
         blended = raw * (1 - self.alpha) + mask * self.alpha * 255
         
-        
+        # Normalize
         blended = blended / 255.0
         
-        
-        
+        # Reshape for processing
         cube = np.transpose(blended, (1, 2, 0, 3))
         
-        
+        # Extract frames
         frames = [cube[..., z] for z in range(cube.shape[3])]
         
-        
+        # Process frames
         if self.processor is not None:
             inputs = self.processor(frames, return_tensors="pt")
             pixel_values = inputs["pixel_values"].squeeze(0).float()
         else:
-            
+            # Basic processing if no processor is provided
             pixel_values = torch.tensor(np.stack(frames)).float()
         
-        
+        # Get metadata
         metadata = self.metadata[idx]
         
         return pixel_values, pd.Series(metadata), metadata['bbox_name']
@@ -160,64 +155,51 @@ class SynapseSamplingAdapter:
         Returns:
             tuple: (vol_data_dict, synapse_df) - Compatible with the existing pipeline
         """
-        
+        # Get raw data and masks
         raw_data, masks = sample_synapses(batch_size=batch_size, policy=policy, verbose=verbose)
         
-        
+        # Prepare data dictionary
         vol_data_dict = {}
         
-        
+        # Prepare minimal metadata
         synapse_data = []
         
         for i in range(batch_size):
             bbox_name = f"sample_{i}"
             
-            
-            
+            # Store raw data and mask (using mask for both seg_vol and add_mask_vol)
             vol_data_dict[bbox_name] = (np.squeeze(raw_data[i]), np.squeeze(masks[i]), np.squeeze(masks[i]))
             
-            
+            # Only add minimal required metadata
             synapse_data.append({
                 'bbox_name': bbox_name,
-                'Var1': i,
-                
-                'central_coord_1': 40,
-                'central_coord_2': 40,
-                'central_coord_3': 40,
-                
-                'side_1_coord_1': 20,
-                'side_1_coord_2': 20,
-                'side_1_coord_3': 20,
-                'side_2_coord_1': 60,
-                'side_2_coord_2': 60,
-                'side_2_coord_3': 60,
+                'Var1': i
             })
         
-        
+        # Create DataFrame
         synapse_df = pd.DataFrame(synapse_data)
         
         if verbose:
-            print(f"Created synthetic vol_data_dict with {len(vol_data_dict)} samples")
-            print(f"Created synthetic synapse_df with {len(synapse_df)} rows")
+            print(f"Created vol_data_dict with {len(vol_data_dict)} samples")
+            print(f"Created synapse_df with {len(synapse_df)} rows")
         
         return vol_data_dict, synapse_df
 
 
-
 if __name__ == "__main__":
-    
+    # Test the adapter
     adapter = SynapseSamplingAdapter()
     
-    
+    # Test dataset creation
     dataset = adapter.create_dataset(batch_size=10, policy="dummy", verbose=True)
     print(f"Dataset size: {len(dataset)}")
     
-    
+    # Test sample access
     pixel_values, metadata, bbox_name = dataset[0]
     print(f"Sample shape: {pixel_values.shape}")
     print(f"Sample bbox_name: {bbox_name}")
     
-    
+    # Test pipeline data preparation
     vol_data_dict, synapse_df = adapter.load_and_prepare_data_for_pipeline(batch_size=10, policy="dummy", verbose=True)
     print(f"vol_data_dict size: {len(vol_data_dict)}")
     print(f"synapse_df size: {len(synapse_df)}") 

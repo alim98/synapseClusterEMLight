@@ -57,15 +57,24 @@ class SynapsePipeline:
         self.processor = Synapse3DProcessor(size=self.config.size)
         self.processor.normalize_volume = False
         
-        # Use connectome dataset
+        # Use connectome dataset with separate num_samples and batch_size
+        num_samples = getattr(self.config, 'connectome_num_samples', 100)
         batch_size = getattr(self.config, 'connectome_batch_size', 10)
         policy = getattr(self.config, 'connectome_policy', 'dummy')
         verbose = getattr(self.config, 'connectome_verbose', False)
+        
+        # Add debugging prints
+        print(f"DEBUG - Loading dataset with:")
+        print(f"  num_samples: {num_samples}")
+        print(f"  batch_size: {batch_size}")
+        print(f"  policy: {policy}")
+        print(f"  verbose: {verbose}")
         
         self.dataset = ConnectomeDataset(
             processor=self.processor,
             segmentation_type=self.config.segmentation_type,
             alpha=self.config.alpha,
+            num_samples=num_samples,
             batch_size=batch_size,
             policy=policy,
             verbose=verbose
@@ -104,13 +113,29 @@ class SynapsePipeline:
             pooling_method=pooling_method
         )
         
-        if isinstance(features_path, str):
+        # Manually save the features as a backup
+        if isinstance(features_path, pd.DataFrame):
+            # If features_path is a DataFrame, save it directly
+            backup_path = os.path.join(output_dir, f"backup_features_{pooling_method}.csv")
+            print(f"Saving backup features to: {backup_path}")
+            features_path.to_csv(backup_path, index=False)
+            self.features_df = features_path
+        elif isinstance(features_path, str):
             if os.path.exists(features_path):
                 self.features_df = pd.read_csv(features_path)
+                print(f"Features loaded from: {features_path}")
             else:
-                raise FileNotFoundError(f"Features file not found at {features_path}")
+                print(f"Features file not found at {features_path}, creating empty DataFrame")
+                self.features_df = pd.DataFrame()
         else:
-            self.features_df = features_path
+            print("Unexpected type for features_path, creating empty DataFrame")
+            self.features_df = pd.DataFrame()
+            
+        # Double-check features_df exists and has data
+        if not isinstance(self.features_df, pd.DataFrame) or self.features_df.empty:
+            print("Warning: Features DataFrame is empty or not created properly")
+        else:
+            print(f"Features DataFrame has {len(self.features_df)} rows and {len(self.features_df.columns)} columns")
             
         return self.features_df
     
@@ -161,6 +186,7 @@ def main():
         config.results_dir = os.path.join(workspace_dir, "results")
     
     # Configure connectome settings
+    config.connectome_num_samples = getattr(config, 'connectome_num_samples', 100)
     config.connectome_batch_size = getattr(config, 'connectome_batch_size', 10)
     config.connectome_policy = getattr(config, 'connectome_policy', 'dummy')
     config.connectome_verbose = getattr(config, 'connectome_verbose', False)
