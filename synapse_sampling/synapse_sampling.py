@@ -3,8 +3,8 @@ import h5py
 from typing import Tuple, Iterable
 from tqdm import tqdm
 
-from synapse_sampling.src.bbox_reader import BboxReader
-from synapse_sampling.src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes
+from src.bbox_reader import BboxReader
+from src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes
 
 
 CONNECTOME_PATH = "/nexus/posix0/MBR-neuralsystems/vx/artifacts/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v1/create_connectome/connectome__34fa6f477d-v1/connectome/connectome.hdf5"
@@ -107,10 +107,7 @@ def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.nd
     """
     Sample synapse raw em data and pre-synaptic agglomeration + cleft mask for a given batch size and policy.
     """
-    print(f"DEBUG - sample_synapses called with batch_size={batch_size}, policy={policy}")
-    
     if policy == "dummy":
-        print(f"DEBUG - Using dummy data with shape ({batch_size}, 1, 80, 80, 80)")
         return np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8) 
     else:
         positions, agglo_ids = sample_connectome(batch_size, policy)
@@ -124,7 +121,6 @@ def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.nd
             mask.append(m)
         raw = np.stack(raw, axis=0)
         mask = np.stack(mask, axis=0)
-        print(f"DEBUG - Returning data with shape: raw={raw.shape}, mask={mask.shape}")
         return raw, mask
     
 
