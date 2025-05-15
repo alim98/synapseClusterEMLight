@@ -3,7 +3,7 @@ import torch
 import pandas as pd
 from torch.utils.data import Dataset
 
-from newdl.dataloader3 import SynapseDataLoader
+from newdl.dataloader import SynapseDataLoader
 
 class SynapseDataset(Dataset):
     def __init__(self, vol_data_dict: dict, synapse_df: pd.DataFrame, processor,

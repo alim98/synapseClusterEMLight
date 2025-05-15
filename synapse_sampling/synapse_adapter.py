@@ -13,8 +13,8 @@ from typing import Dict, Tuple, List, Union, Optional
 from tqdm import tqdm
 
 from synapse_sampling.synapse_sampling import sample_synapses
-from newdl.dataloader3 import SynapseDataLoader, Synapse3DProcessor
-from newdl.dataset3 import SynapseDataset
+from newdl.dataloader import SynapseDataLoader, Synapse3DProcessor
+from newdl.dataset import SynapseDataset
 
 class SynapseSamplingDataset(torch.utils.data.Dataset):
     """

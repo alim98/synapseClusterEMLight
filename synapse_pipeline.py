@@ -11,7 +11,7 @@ from pathlib import Path
 
 from synapse import config
 from synapse_sampling.adapter import ConnectomeDataset
-from newdl.dataloader3 import Synapse3DProcessor
+from newdl.dataloader import Synapse3DProcessor
 
 class SynapsePipeline:
     """

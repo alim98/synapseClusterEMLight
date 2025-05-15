@@ -1,5 +1,6 @@
 """
-python synapse_sampling/run_synapse_pipeline_with_sampling.py --use_connectome --policy dummy --batch_size 5 --verbose
+cd SynapseClusterEM
+python synapse_sampling/run_synapse_pipeline_with_sampling.py --use_connectome --policy dummy --batch_size 5 num_samples 10 --verbose
 """
 
 import os
@@ -19,7 +20,7 @@ from synapse import config
 from synapse_pipeline import SynapsePipeline
 
 
-from newdl.dataloader3 import Synapse3DProcessor
+from newdl.dataloader import Synapse3DProcessor
 
 from synapse_sampling.adapter import SynapseConnectomeAdapter, ConnectomeDataset
 from synapse_sampling.inference_patch import patch_extract_features, patch_extract_stage_specific_features
