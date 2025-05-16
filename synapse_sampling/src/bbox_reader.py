@@ -15,8 +15,6 @@ class BboxReader():
         voxel_size = [8, 8, 8],  # nm (dataset resolution)
         bbox_size = [4, 4, 4],  # µm
         bbox_unit_scale: str = "µm", # scale to nm (ex: 1e3 for µm) or None for 1vox
-        spacing = 10,  # µm (for nml skeleton sampling)
-        min_distance = 20,  # µm (for nml skeleton sampling)
     ) -> None:
 
         self.AGGLO_PATH = agglo_path
@@ -24,7 +22,6 @@ class BboxReader():
         self.RAW_PATH = raw_path
 
         self.VOXEL_SIZE = np.array(voxel_size)
-        self.SPACING = spacing
         self.BBOX_SIZE = np.array(bbox_size)
 
         match bbox_unit_scale:
@@ -40,9 +37,7 @@ class BboxReader():
         self.update_vox_size()
 
     def update_vox_size(self):
-        self.SPACING_VOX = int((self.SPACING * self.BBOX_UNIT_SCALE) / self.VOXEL_SIZE[0]) # minimum spacing between nodes in voxels
         self.BBOX_SIZE_VOX = (self.BBOX_SIZE * self.BBOX_UNIT_SCALE / self.VOXEL_SIZE).astype(int)
-        
 
     def get_seg_from_agglo(self, agglo_ids):
         """Get segment ids for given agglomerate IDs."""
@@ -77,8 +72,8 @@ class BboxReader():
     def read_bbox_data(self, point, magnification):
         """Read raw and segmentation data for a bbox centered on point."""
 
-        raw_data = self.read_bbox(point, self.SEG_PATH, "segmentation", magnification)
-        seg_data = self.read_bbox(point, self.RAW_PATH, "color_InLens", magnification)
+        seg_data = self.read_bbox(point, self.SEG_PATH, "segmentation", magnification)
+        raw_data = self.read_bbox(point, self.RAW_PATH, "color_InLens", magnification)
         
         # Convert raw_data from uint16 to uint8 and invert
         raw_data = raw_data.astype(np.float32)  # Convert to float first to avoid overflow
