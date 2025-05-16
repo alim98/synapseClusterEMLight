@@ -56,6 +56,8 @@ def configure_pipeline_args():
                         help="Print verbose information during sampling")
     parser.add_argument("--num_samples", type=int, default=10,
                     help="Number of samples to load from connectome")
+    parser.add_argument("--max_cached_batches", type=int, default=3,
+                    help="Maximum number of batches to keep in memory cache")
     
     
     config.parse_args()
@@ -79,6 +81,7 @@ def configure_pipeline_args():
     config.connectome_policy = args.policy
     config.connectome_verbose = args.verbose
     config.connectome_num_samples = args.num_samples
+    config.max_cached_batches = args.max_cached_batches
     print(f"config.connectome_num_samples: {config.connectome_num_samples}")
     return config
 
@@ -127,7 +130,8 @@ def run_pipeline_with_connectome(config, timestamp):
         num_samples=config.connectome_num_samples,
         batch_size=config.connectome_batch_size,
         policy=config.connectome_policy,
-        verbose=config.connectome_verbose
+        verbose=config.connectome_verbose,
+        max_cached_batches=config.max_cached_batches
     )
     
     

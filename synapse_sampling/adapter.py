@@ -128,7 +128,8 @@ class ConnectomeDataset(Dataset):
     Similar to SynapseDataset but uses the adapter for data loading.
     """
     def __init__(self, processor, segmentation_type: int = 10, alpha: float = 1.0, 
-                 num_samples: int = 100, batch_size: int = 10, policy: str = "random", verbose: bool = False):
+                 num_samples: int = 100, batch_size: int = 10, policy: str = "random", 
+                 verbose: bool = False, max_cached_batches: int = 3):
         """
         Initialize the dataset with the adapter
         
@@ -140,6 +141,7 @@ class ConnectomeDataset(Dataset):
             batch_size: Batch size for model inference
             policy: Sampling policy ("random" or "dummy")
             verbose: Whether to print verbose information
+            max_cached_batches: Maximum number of batches to keep in memory cache (default 3)
         """
         # Create adapter
         self.adapter = SynapseConnectomeAdapter(num_samples, batch_size, policy, verbose)
@@ -157,6 +159,7 @@ class ConnectomeDataset(Dataset):
         self.alpha = alpha
         self.batch_size = batch_size
         self.verbose = verbose
+        self.max_cached_batches = max_cached_batches
         
         # Default dimensions
         self.num_frames = 80  
@@ -188,7 +191,7 @@ class ConnectomeDataset(Dataset):
         # Check if we already have this batch cached
         if batch_idx not in self.cached_batch_indices:
             # Clear the cache if it's getting too large
-            if len(self.cached_batch_indices) > 3:  # Keep only a few batches in memory
+            if len(self.cached_batch_indices) > self.max_cached_batches:  # Use configurable cache size
                 self.cache = {}
                 self.cached_batch_indices = set()
             
@@ -200,7 +203,7 @@ class ConnectomeDataset(Dataset):
             self.cached_batch_indices.add(batch_idx)
             
             if self.verbose:
-                print(f"Loaded batch {batch_idx} into RAM")
+                print(f"Loaded batch {batch_idx} into RAM (cache: {len(self.cached_batch_indices)}/{self.max_cached_batches})")
         
         # Get volumes from cache
         vol_data_dict = self.cache[batch_idx]
