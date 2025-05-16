@@ -47,7 +47,7 @@ def sample_connectome(batch_size=1, policy="random", connectome_path=CONNECTOME_
         return np.zeros((batch_size, 3), dtype=np.uint32)
 
     # load only once    
-    if not positions:
+    if positions is None:
         with h5py.File(connectome_path, 'r') as f:
             positions = f['synapse_positions'][:]
             agglo_ids = f['synapse_to_src_agglomerate'][:]
