@@ -3,6 +3,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from typing import Tuple, Dict, List, Any, Optional
+import warnings
 
 
 from synapse_sampling.synapse_sampling import sample_synapses
@@ -36,22 +37,30 @@ class SynapseConnectomeAdapter:
         print(f"  policy: {policy}")
         print(f"  verbose: {verbose}")
         
-    def load_data(self) -> Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]], pd.DataFrame]:
+    def get_batch(self, batch_indices):
         """
-        Load data using the synapse_sampling module instead of loading from files.
+        Load a single batch of data dynamically using the synapse_sampling module.
         
+        Args:
+            batch_indices: Indices of the samples to load in this batch
+            
         Returns:
             Tuple[Dict, DataFrame]: A tuple containing:
                 - Dictionary mapping sample IDs to (raw_vol, seg_vol, mask_vol) tuples
-                - DataFrame with metadata for each sample
+                - DataFrame with metadata for the batch
         """
-        print(f"DEBUG - SynapseConnectomeAdapter.load_data() called, will fetch {self.num_samples} samples")
+        if self.verbose:
+            print(f"DEBUG - Loading batch with indices: {batch_indices}")
         
-        # Sample raw volumes and masks
-        raw_volumes, mask_volumes = sample_synapses(batch_size=self.num_samples, policy=self.policy, verbose=self.verbose)
+        # Get actual batch size (last batch may be smaller)
+        actual_batch_size = len(batch_indices)
         
-        print(f"DEBUG - Raw volumes shape: {raw_volumes.shape}")
-        print(f"DEBUG - Mask volumes shape: {mask_volumes.shape}")
+        # Sample raw volumes and masks for just this batch
+        raw_volumes, mask_volumes = sample_synapses(batch_size=actual_batch_size, policy=self.policy, verbose=self.verbose)
+        
+        if self.verbose:
+            print(f"DEBUG - Raw volumes shape: {raw_volumes.shape}")
+            print(f"DEBUG - Mask volumes shape: {mask_volumes.shape}")
         
         # Prepare data dictionary
         vol_data_dict = {}
@@ -68,8 +77,8 @@ class SynapseConnectomeAdapter:
             # Use mask for segmentation volume
             seg_vol = mask_vol.copy()
             
-            # Create sample ID
-            sample_id = f"sample_{i+1}"
+            # Create sample ID (using the real index from batch_indices)
+            sample_id = f"sample_{batch_indices[i]+1}"
             
             # Store in dictionary
             vol_data_dict[sample_id] = (raw_vol, seg_vol, mask_vol)
@@ -77,6 +86,30 @@ class SynapseConnectomeAdapter:
             # Create minimal metadata
             metadata = {
                 'bbox_name': sample_id,
+                'Var1': batch_indices[i]
+            }
+            metadata_list.append(metadata)
+        
+        # Create DataFrame
+        batch_df = pd.DataFrame(metadata_list)
+        
+        if self.verbose:
+            print(f"DEBUG - Created batch_df with {len(batch_df)} rows")
+        
+        return vol_data_dict, batch_df
+    
+    def get_metadata(self):
+        """
+        Generate metadata for all samples without loading the actual data.
+        
+        Returns:
+            DataFrame: Metadata for all samples
+        """
+        # Generate minimal metadata for all samples
+        metadata_list = []
+        for i in range(self.num_samples):
+            metadata = {
+                'bbox_name': f"sample_{i+1}",
                 'Var1': i
             }
             metadata_list.append(metadata)
@@ -84,9 +117,9 @@ class SynapseConnectomeAdapter:
         # Create DataFrame
         synapse_df = pd.DataFrame(metadata_list)
         
-        print(f"DEBUG - Created synapse_df with {len(synapse_df)} rows")
+        print(f"DEBUG - Created metadata for {len(synapse_df)} samples")
         
-        return vol_data_dict, synapse_df
+        return synapse_df
 
 
 class ConnectomeDataset(Dataset):
@@ -108,17 +141,22 @@ class ConnectomeDataset(Dataset):
             policy: Sampling policy ("random" or "dummy")
             verbose: Whether to print verbose information
         """
-        # Create adapter and load data
+        # Create adapter
         self.adapter = SynapseConnectomeAdapter(num_samples, batch_size, policy, verbose)
         
-        # Get data and metadata
-        self.vol_data_dict, self.synapse_df = self.adapter.load_data()
+        # Get metadata only (not loading all data)
+        self.synapse_df = self.adapter.get_metadata()
+        
+        # Cache for batches
+        self.cache = {}
+        self.cached_batch_indices = set()
         
         # Store parameters
         self.processor = processor
         self.segmentation_type = segmentation_type
         self.alpha = alpha
         self.batch_size = batch_size
+        self.verbose = verbose
         
         # Default dimensions
         self.num_frames = 80  
@@ -141,17 +179,36 @@ class ConnectomeDataset(Dataset):
         syn_info = self.synapse_df.iloc[idx]
         sample_id = syn_info['bbox_name']
         
-        # Get volumes
-        raw_vol, seg_vol, mask_vol = self.vol_data_dict.get(sample_id, (None, None, None))
+        # Calculate which batch this sample belongs to
+        batch_idx = idx // self.batch_size
+        batch_start = batch_idx * self.batch_size
+        batch_end = min(batch_start + self.batch_size, len(self))
+        batch_indices = list(range(batch_start, batch_end))
+        
+        # Check if we already have this batch cached
+        if batch_idx not in self.cached_batch_indices:
+            # Clear the cache if it's getting too large
+            if len(self.cached_batch_indices) > 3:  # Keep only a few batches in memory
+                self.cache = {}
+                self.cached_batch_indices = set()
+            
+            # Load this batch
+            vol_data_dict, _ = self.adapter.get_batch(batch_indices)
+            
+            # Store in cache
+            self.cache[batch_idx] = vol_data_dict
+            self.cached_batch_indices.add(batch_idx)
+            
+            if self.verbose:
+                print(f"Loaded batch {batch_idx} into RAM")
+        
+        # Get volumes from cache
+        vol_data_dict = self.cache[batch_idx]
+        raw_vol, seg_vol, mask_vol = vol_data_dict.get(sample_id, (None, None, None))
         
         if raw_vol is None:
             print(f"Volume data not found for {sample_id}. Returning None.")
             return None
-        
-        # # Debugging info for first item only
-        # if idx == 0 and isinstance(self.processor.verbose, bool) and self.processor.verbose:  
-        #     print(f"Raw volume shape: {raw_vol.shape}")
-        #     print(f"Mask volume shape: {mask_vol.shape}")
         
         # Handle 4D volumes if needed
         if len(raw_vol.shape) == 4 and raw_vol.shape[0] == 1:

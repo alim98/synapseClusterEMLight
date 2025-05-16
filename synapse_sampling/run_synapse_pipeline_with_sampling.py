@@ -79,7 +79,7 @@ def configure_pipeline_args():
     config.connectome_policy = args.policy
     config.connectome_verbose = args.verbose
     config.connectome_num_samples = args.num_samples
-    
+    print(f"config.connectome_num_samples: {config.connectome_num_samples}")
     return config
 
 
@@ -132,7 +132,6 @@ def run_pipeline_with_connectome(config, timestamp):
     
     
     pipeline.dataset = dataset
-    pipeline.vol_data_dict = dataset.vol_data_dict
     pipeline.syn_df = dataset.synapse_df
     
     
