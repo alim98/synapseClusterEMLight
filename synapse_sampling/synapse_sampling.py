@@ -4,7 +4,7 @@ from typing import Tuple, Iterable
 from tqdm import tqdm
 
 from src.bbox_reader import BboxReader
-from src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes
+from src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes, SynapseSamplingException
 
 
 CONNECTOME_PATH = "/nexus/posix0/MBR-neuralsystems/vx/artifacts/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v1/create_connectome/connectome__34fa6f477d-v1/connectome/connectome.hdf5"
@@ -92,11 +92,14 @@ def get_synapse_data(position: Iterable,
     synapse = read_mag_bbox_data(mag, center, bbox_size)
     synapse_threshold = 100
     synapse_mask = synapse > synapse_threshold
+    
+    if synapse_mask.sum() == 0: raise SynapseSamplingException(f"No synapses are predicted above synapse threshold value: Threshold: {synapse_threshold}, Max value: {synapse.max()}. Maybe try a lower threshold value.")
 
     # get pre-synapse agglomeration mask
     reader = BboxReader(bbox_size=np.array([80, 80, 80]), bbox_unit_scale='vox', raw_path=raw_path, seg_path=seg_path, agglo_path=agglo_path)
     raw, agglo = reader.read_bbox_agglo_data(position, 1)
     pre_agglo_mask = (agglo == src_agglo_id).astype(np.uint8)
+
     
     # merge synapse mask with agglomeration
     full_mask = pre_agglo_mask | filter_non_center_components(synapse_mask.squeeze())[None, ...]
@@ -116,13 +119,24 @@ def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.nd
         if verbose: print(f"Reading and Masking {batch_size} synapse boxes...")
         wrapper = lambda x: tqdm(x, total=batch_size) if verbose else x
         for position, src_agglo_id in wrapper(zip(positions, agglo_ids)):
-            r, m = get_synapse_data(position, src_agglo_id)
+            budget = 100
+            while budget > 0:
+                try:
+                    r, m = get_synapse_data(position, src_agglo_id)
+                    budget = 0
+                except SynapseSamplingException as e:
+                    new_position, new_src_agglo_id = sample_connectome(1, policy)
+                    position = new_position[0]
+                    src_agglo_id = new_src_agglo_id[0]
+                    budget -= 1
+                    if budget == 0:
+                        raise SynapseSamplingException(f"Failed to get synapse data after multiple repeated attempts. Last error: {e}")
             raw.append(r)
             mask.append(m)
         raw = np.stack(raw, axis=0)
         mask = np.stack(mask, axis=0)
         return raw, mask
-    
+
 
 if __name__ == "__main__":
     # Test the functions

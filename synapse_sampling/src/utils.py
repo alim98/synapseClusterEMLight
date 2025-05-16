@@ -24,13 +24,15 @@ def read_mag_bbox_data(mag, center, size):
 
 from skimage.measure import label, regionprops
 
-def filter_non_center_components(mask):
+def filter_non_center_components(agglo_mask):
     """
     Filter out the non-center components of a mask. 
     The center component is the one closest to the center of the mask.
     """
+    
+    assert agglo_mask.sum() > 0, "mask can't be empty"
 
-    mask = label(mask)
+    mask = label(agglo_mask)
     center = np.array(mask.shape) // 2
     props = regionprops(mask)
 
@@ -71,3 +73,12 @@ def get_point_mask_in_boxes(points, boxes):
         )
         mask |= inside  # Accumulate any point inside any box
     return mask
+
+#==================EXCEPTIONS========================
+
+class SynapseSamplingException(Exception):
+    """Custom exception for synapse sampling errors."""
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+    
