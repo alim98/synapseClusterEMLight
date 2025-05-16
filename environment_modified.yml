@@ -23,7 +23,7 @@ dependencies:
   - torchvision
   
   - pip:
-    - webknossos==2.3.5
+    - webknossos==2.1.0
     - wkw==1.1.24
     - wget==3.2
     - PIMS==0.7

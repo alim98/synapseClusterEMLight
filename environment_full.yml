@@ -267,7 +267,7 @@ dependencies:
       - typer==0.12.5
       - typing-extensions==4.12.2
       - universal-pathlib==0.2.6
-      - webknossos==2.3.5
+      - webknossos==2.1.0
       - wget==3.2
       - wkw==1.1.24
       - yarl==1.20.0
