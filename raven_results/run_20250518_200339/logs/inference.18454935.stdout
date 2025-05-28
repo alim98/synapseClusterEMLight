@@ -1,0 +1,9 @@
+config.connectome_num_samples: 24000
+DEBUG - SynapseConnectomeAdapter initialized with:
+  num_samples: 24000
+  batch_size: 240
+  policy: random
+  verbose: False
+DEBUG - Created metadata for 24000 samples
+Model loaded from hemibrain_production.checkpoint
+Using batch_size=240 for DataLoader in feature extraction

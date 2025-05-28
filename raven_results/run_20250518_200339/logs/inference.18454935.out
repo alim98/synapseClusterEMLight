@@ -1,0 +1,28 @@
+                                  
+================================= 
+Global information about the job: 
+================================= 
+  
+Job owner: mbrodeur(51580)
+Job name:  inference_gpu
+Node list: ravg1178
+Job start: Sun May 18 20:02:19 CEST 2025
+Job end:   Mon May 19 00:32:22 CEST 2025
+Work dir:  /nexus/posix0/MBR-neuralsystems/synapse_clustering/synapseClusterEMLight/./
+Command:   /nexus/posix0/MBR-neuralsystems/synapse_clustering/synapseClusterEMLight/launch_inference.sh
+  
+  
+  
+==========================================================================================
+Information on jobsteps (Note: MaxRSS/AveRSS is the maximum/average over all 
+tasks of the per-task memory high-water marks; cf. "man sacct"): 
+==========================================================================================
+  
+JobID            JobName NNodes NTasks  NCPUS       MaxRSS       AveRSS    Elapsed ExitCode
+------------- ---------- ------ ------ ------ ------------ ------------ ---------- --------
+18454935      inference_      1            64                             04:30:03      0:0
+18454935.0        python      1      1     64    48577.15M    48577.15M   04:29:56      0:0
+  
+Maximum memory per node: 50.936832 GB (defined as MaxRSS*Ntasks/NNodes)
+CPU utilization: 9.0 %
+  
