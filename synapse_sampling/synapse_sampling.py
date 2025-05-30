@@ -111,7 +111,7 @@ def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.nd
     Sample synapse raw em data and pre-synaptic agglomeration + cleft mask for a given batch size and policy.
     """
     if policy == "dummy":
-        return np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8) 
+        return np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 3), dtype=np.uint32), np.zeros((batch_size, 1), dtype=np.uint64) 
     else:
         positions, agglo_ids = sample_connectome(batch_size, policy)
         raw = []
