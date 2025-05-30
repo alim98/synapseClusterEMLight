@@ -106,12 +106,12 @@ def get_synapse_data(position: Iterable,
 
     return raw, full_mask
 
-def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.ndarray, np.ndarray]:
+def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Sample synapse raw em data and pre-synaptic agglomeration + cleft mask for a given batch size and policy.
     """
     if policy == "dummy":
-        return np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8) 
+        return np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8), np.zeros((batch_size, 1, 80, 80, 80), dtype=np.uint8) 
     else:
         positions, agglo_ids = sample_connectome(batch_size, policy)
         raw = []
@@ -135,8 +135,7 @@ def sample_synapses(batch_size=1, policy="random", verbose=False) -> Tuple[np.nd
             mask.append(m)
         raw = np.stack(raw, axis=0)
         mask = np.stack(mask, axis=0)
-        return raw, mask
-
+        return raw, mask, positions, agglo_ids
 
 if __name__ == "__main__":
     # Test the functions
