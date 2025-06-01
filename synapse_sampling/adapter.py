@@ -55,12 +55,14 @@ class SynapseConnectomeAdapter:
         # Get actual batch size (last batch may be smaller)
         actual_batch_size = len(batch_indices)
         
-        # Sample raw volumes and masks for just this batch
-        raw_volumes, mask_volumes = sample_synapses(batch_size=actual_batch_size, policy=self.policy, verbose=self.verbose)
+        # Sample raw volumes and masks for just this batch - now includes positions and agglo_ids
+        raw_volumes, mask_volumes, positions, agglo_ids = sample_synapses(batch_size=actual_batch_size, policy=self.policy, verbose=self.verbose)
         
         if self.verbose:
             print(f"DEBUG - Raw volumes shape: {raw_volumes.shape}")
             print(f"DEBUG - Mask volumes shape: {mask_volumes.shape}")
+            print(f"DEBUG - Positions shape: {positions.shape}")
+            print(f"DEBUG - Agglo_ids shape: {agglo_ids.shape}")
         
         # Prepare data dictionary
         vol_data_dict = {}
@@ -83,10 +85,14 @@ class SynapseConnectomeAdapter:
             # Store in dictionary
             vol_data_dict[sample_id] = (raw_vol, seg_vol, mask_vol)
             
-            # Create minimal metadata
+            # Create metadata including positions and agglo_ids
             metadata = {
                 'bbox_name': sample_id,
-                'Var1': batch_indices[i]
+                'Var1': batch_indices[i],
+                'position_x': positions[i][0],
+                'position_y': positions[i][1], 
+                'position_z': positions[i][2],
+                'agglo_id': agglo_ids[i]
             }
             metadata_list.append(metadata)
         
@@ -110,7 +116,11 @@ class SynapseConnectomeAdapter:
         for i in range(self.num_samples):
             metadata = {
                 'bbox_name': f"sample_{i+1}",
-                'Var1': i
+                'Var1': i,
+                'position_x': None,  # Will be filled when batch is loaded
+                'position_y': None,  # Will be filled when batch is loaded
+                'position_z': None,  # Will be filled when batch is loaded
+                'agglo_id': None     # Will be filled when batch is loaded
             }
             metadata_list.append(metadata)
         
@@ -196,7 +206,15 @@ class ConnectomeDataset(Dataset):
                 self.cached_batch_indices = set()
             
             # Load this batch
-            vol_data_dict, _ = self.adapter.get_batch(batch_indices)
+            vol_data_dict, batch_metadata_df = self.adapter.get_batch(batch_indices)
+            
+            # Update the main synapse_df with the actual metadata from the batch
+            for _, row in batch_metadata_df.iterrows():
+                sample_idx = row['Var1']  # This is the actual dataset index
+                self.synapse_df.loc[sample_idx, 'position_x'] = row['position_x']
+                self.synapse_df.loc[sample_idx, 'position_y'] = row['position_y']
+                self.synapse_df.loc[sample_idx, 'position_z'] = row['position_z']
+                self.synapse_df.loc[sample_idx, 'agglo_id'] = row['agglo_id']
             
             # Store in cache
             self.cache[batch_idx] = vol_data_dict
@@ -204,6 +222,9 @@ class ConnectomeDataset(Dataset):
             
             if self.verbose:
                 print(f"Loaded batch {batch_idx} into RAM (cache: {len(self.cached_batch_indices)}/{self.max_cached_batches})")
+        
+        # Get updated sample info after potential metadata update
+        syn_info = self.synapse_df.iloc[idx]
         
         # Get volumes from cache
         vol_data_dict = self.cache[batch_idx]
