@@ -52,8 +52,8 @@ def configure_pipeline_args():
                         help="Use connectome data instead of local files", default=True)
     parser.add_argument("--batch_size", type=int, default=10,
                         help="Number of samples to load from connectome")
-    parser.add_argument("--policy", type=str, choices=['random', 'dummy', 'local'], default='dummy',
-                        help="Sampling policy for connectome data ('random', 'dummy', 'local')")
+    parser.add_argument("--policy", type=str, choices=['random', 'dummy', 'local', 'mixed'], default='dummy',
+                        help="Sampling policy: random (connectome), local (csv), mixed (connectome + csv)")
     parser.add_argument("--verbose", action="store_true",
                         help="Print verbose information during sampling")
     parser.add_argument("--num_samples", type=int, default=10,

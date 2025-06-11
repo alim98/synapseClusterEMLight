@@ -50,7 +50,7 @@ def sample_connectome(batch_size=1, policy="random", connectome_path=CONNECTOME_
         Tuple[np.ndarray, np.ndarray]: A tuple containing the sampled positions and agglomeration IDs (shapes: (batch_size, 3) and (batch_size,)).
     """
 
-    global positions, agglo_ids
+    global positions, agglo_ids, local_positions, local_agglo_ids
 
     if policy == "dummy":
         return np.zeros((batch_size, 3), dtype=np.uint32)
@@ -74,8 +74,6 @@ def sample_connectome(batch_size=1, policy="random", connectome_path=CONNECTOME_
 
     elif policy == "sequential": raise NotImplementedError("Sequential sampling is not implemented yet.")
     elif policy == "local":
-        global local_positions, local_agglo_ids
-
         # lazy load csv once
         if local_positions is None:
             if not os.path.exists(LOCAL_CSV_PATH):
@@ -89,6 +87,34 @@ def sample_connectome(batch_size=1, policy="random", connectome_path=CONNECTOME_
 
         indices = rng.choice(local_positions.shape[0], size=batch_size, replace=False)
         return local_positions[indices], local_agglo_ids[indices]
+    elif policy ==  "mixed":
+        # ensure both sources loaded
+        # load connectome positions if not yet
+        if positions is None:
+            with h5py.File(connectome_path, 'r') as f:
+                positions = f['synapse_positions'][:]
+                agglo_ids = f['synapse_to_src_agglomerate'][:]
+            mask = get_point_mask_in_boxes(positions, plexiform_bboxes)
+            positions = positions[mask]
+            agglo_ids = agglo_ids[mask]
+
+        # load local csv
+        if local_positions is None:
+            if not os.path.exists(LOCAL_CSV_PATH):
+                raise FileNotFoundError(f"Local CSV not found at {LOCAL_CSV_PATH}")
+            df = pd.read_csv(LOCAL_CSV_PATH)
+            required_cols = {"abspos1", "abspos2", "abspos3", "agglo_id"}
+            if not required_cols.issubset(df.columns):
+                raise ValueError(f"CSV must contain columns {required_cols}")
+            local_positions = df[["abspos1", "abspos2", "abspos3"]].to_numpy(dtype=np.uint32)
+            local_agglo_ids = df["agglo_id"].to_numpy(dtype=np.uint64)
+
+        # concatenate both pools
+        combined_positions = np.concatenate([positions, local_positions], axis=0)
+        combined_agglos = np.concatenate([agglo_ids, local_agglo_ids], axis=0)
+
+        indices = rng.choice(combined_positions.shape[0], size=batch_size, replace=False)
+        return combined_positions[indices], combined_agglos[indices]
     else: raise ValueError(f"Unknown sampling policy: {policy}")
 
 
