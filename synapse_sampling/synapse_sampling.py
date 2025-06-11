@@ -1,7 +1,9 @@
 import numpy as np
 import h5py
+import pandas as pd
 from typing import Tuple, Iterable
 from tqdm import tqdm
+import os
 
 from src.bbox_reader import BboxReader
 from src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes, SynapseSamplingException
@@ -12,6 +14,9 @@ SYNAPSE_PREDICTION_DATASET_PATH = path = "/nexus/posix0/MBR-neuralsystems/vx/art
 AGGLO_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v2_nuclei_exclusion_with_meshes_full_dataset/segmentation/agglomerates/agglomerate_view_60.hdf5'
 RAW_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_extended_v2_nuclei_exclusion_with_meshes/'
 SEG_PATH = '/nexus/posix0/MBR-neuralsystems/data/aligned/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v2_nuclei_exclusion_with_meshes_full_dataset/'
+
+# Local CSV containing curated synapse positions and presynaptic ids
+LOCAL_CSV_PATH = 'SynapseClusterEM/data/absolute_positions_with_agglo_filtered.csv'
 
 # Hardcoded plexiform bboxes from Dom
 plexiform_bboxes = [
@@ -28,6 +33,10 @@ plexiform_bboxes = [
 # Global variables so we load them only once (256 MB total)
 positions = None
 agglo_ids = None
+
+# cache for local csv
+local_positions = None
+local_agglo_ids = None
 
 rng = np.random.default_rng(seed=37)
 
@@ -64,6 +73,22 @@ def sample_connectome(batch_size=1, policy="random", connectome_path=CONNECTOME_
         return positions[indices], agglo_ids[indices]
 
     elif policy == "sequential": raise NotImplementedError("Sequential sampling is not implemented yet.")
+    elif policy == "local":
+        global local_positions, local_agglo_ids
+
+        # lazy load csv once
+        if local_positions is None:
+            if not os.path.exists(LOCAL_CSV_PATH):
+                raise FileNotFoundError(f"Local CSV not found at {LOCAL_CSV_PATH}")
+            df = pd.read_csv(LOCAL_CSV_PATH)
+            required_cols = {"abspos1", "abspos2", "abspos3", "agglo_id"}
+            if not required_cols.issubset(df.columns):
+                raise ValueError(f"CSV must contain columns {required_cols}")
+            local_positions = df[["abspos1", "abspos2", "abspos3"]].to_numpy(dtype=np.uint32)
+            local_agglo_ids = df["agglo_id"].to_numpy(dtype=np.uint64)
+
+        indices = rng.choice(local_positions.shape[0], size=batch_size, replace=False)
+        return local_positions[indices], local_agglo_ids[indices]
     else: raise ValueError(f"Unknown sampling policy: {policy}")
 
 
