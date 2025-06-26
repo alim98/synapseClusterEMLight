@@ -14,3 +14,11 @@ Running with configuration:
   Feature Extraction Method: stage_specific
   Layer Number: 20
   Pooling Method: avg
+
+--- Starting pipeline run at 2025-06-26 14:33:08 ---
+Running with configuration:
+  Segmentation Type: 11
+  Alpha: 1.0
+  Feature Extraction Method: stage_specific
+  Layer Number: 20
+  Pooling Method: avg
