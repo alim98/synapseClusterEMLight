@@ -3,12 +3,12 @@ import os
 
 class SynapseConfig:
     def __init__(self):
-        self.raw_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/raw'
-        self.seg_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/seg'
-        self.add_mask_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/vesicle_cloud__syn_interface__mitochondria_annotation'
+        self.raw_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/raw'
+        self.seg_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/seg'
+        self.add_mask_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/vesicle_cloud__syn_interface__mitochondria_annotation'
         # self.bbox_name = ['bbox1','bbox2','bbox3','bbox4','bbox5','bbox6','bbox7']
         self.bbox_name = ['bbox1','bbox2','bbox3','bbox4','bbox5','bbox6','bbox7']
-        self.excel_file = '/teamspace/studios/this_studio/SynapseClusterEM/data/'
+        self.excel_file = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/'
         self.csv_output_dir = 'results/csv_outputs'
         self.size = (80, 80)
         self.subvol_size = 80
@@ -46,9 +46,9 @@ class SynapseConfig:
         #   Size Tolerance: 0.1
         #   Absolute Difference: 0.00000578
         # Feature extraction parameters
-        self.extraction_method = "standard"  # Options: "standard" or "stage_specific"
+        self.extraction_method = "stage_specific"  # Options: "standard" or "stage_specific"
         self.layer_num = 20  # Layer to extract features from when using stage_specific method
-        self.preprocessing = 'intelligent_cropping'  # Options: 'normal' or 'intelligent_cropping'
+        self.preprocessing = 'normal'  # Options: 'normal' or 'intelligent_cropping'
         self.preprocessing_weights = 0.7 # it has opitons like 0.3 0.5 and 0.7
     def parse_args(self):   
         parser = argparse.ArgumentParser(description="Synapse Dataset Configuration")

@@ -17,13 +17,8 @@ import datetime  # Added for timestamp
 
 from synapse import config
 from synapse_pipeline_local import SynapsePipeline
-# from vesicle_size_visualizer import (
-#     compute_vesicle_cloud_sizes,
-#     create_umap_with_vesicle_sizes,
-#     analyze_vesicle_sizes_by_cluster,
-#     count_bboxes_in_clusters,
-#     plot_bboxes_in_clusters
-# )
+
+
 
 
 # Set up logging to a file

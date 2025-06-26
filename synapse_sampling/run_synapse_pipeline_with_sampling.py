@@ -22,7 +22,7 @@ from synapse import config
 from synapse_pipeline import SynapsePipeline
 
 
-from newdl.dataloader import Synapse3DProcessor
+from synapse.dl.dataloader import Synapse3DProcessor
 
 from synapse_sampling.adapter import SynapseConnectomeAdapter, ConnectomeDataset
 from synapse_sampling.inference_patch import patch_extract_features, patch_extract_stage_specific_features

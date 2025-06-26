@@ -15,9 +15,9 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 import umap
 
-# Import from newdl module instead of synapse
-from newdl.dataloader import SynapseDataLoader, Synapse3DProcessor
-from newdl.dataset import SynapseDataset
+# Import from dl module instead of synapse
+from synapse.dl.dataloader import SynapseDataLoader, Synapse3DProcessor
+from synapse.dl.dataset import SynapseDataset
 from synapse import (
     Vgg3D, 
     load_model_from_checkpoint,

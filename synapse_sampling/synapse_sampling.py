@@ -5,8 +5,8 @@ from typing import Tuple, Iterable
 from tqdm import tqdm
 import os
 
-from src.bbox_reader import BboxReader
-from src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes, SynapseSamplingException
+from .src.bbox_reader import BboxReader
+from .src.utils import filter_non_center_components, get_dataset_layer_mag, read_mag_bbox_data, get_point_mask_in_boxes, SynapseSamplingException
 
 
 CONNECTOME_PATH = "/nexus/posix0/MBR-neuralsystems/vx/artifacts/alik-Merlin-6285_24-03-01-Sample-1A-Mar2023-full_v1/create_connectome/connectome__34fa6f477d-v1/connectome/connectome.hdf5"
