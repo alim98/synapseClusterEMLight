@@ -14,6 +14,8 @@ from synapse.utils.config import config
 from synapse.dl.mask_utils import get_closest_component_mask
 # Import segmentation type processor
 from synapse.dl.segtype_processor import process_segmentation_type
+# Import mask label configuration
+from synapse.dl.mask_labels import get_mask_labels
 
 class Synapse3DProcessor:
     def __init__(self, size=(80, 80), mean=(0.485,), std=(0.229,)):
@@ -141,41 +143,17 @@ class SynapseDataLoader:
         subvolume_size: int = 80,
         alpha: float = 0.3,
         bbox_name: str = "",
-        normalize_across_volume: bool = True,  # Add parameter to control normalization
-        smart_crop: bool = True,  # New parameter to enable intelligent cropping
-        presynapse_weight: float = 0.7,  # New parameter to control the shift toward presynapse (0.0-1.0)
-        normalize_presynapse_size: bool = True,  # New parameter to enable presynapse size normalization
-        target_percentage: float = None,  # Target percentage of presynapse pixels (None = use mean)
-        size_tolerance: float = 0.1,  # Tolerance range as a percentage of the target (±10% by default)
+        normalize_across_volume: bool = True,
 
     ) -> np.ndarray:
         bbox_num = bbox_name.replace("bbox", "").strip()
         
-        if bbox_num in {'2', '5'}:
-            mito_label = 1
-            vesicle_label = 3
-            cleft_label2 = 4
-            cleft_label = 2
-        elif bbox_num == '7':
-            mito_label = 1
-            vesicle_label = 2
-            cleft_label2 = 3
-            cleft_label = 4
-        elif bbox_num == '4':
-            mito_label = 3
-            vesicle_label = 2
-            cleft_label2 = 4
-            cleft_label = 1
-        elif bbox_num == '3':
-            mito_label = 6
-            vesicle_label = 7
-            cleft_label2 = 8
-            cleft_label = 9
-        else:
-            mito_label = 5
-            vesicle_label = 6
-            cleft_label = 7
-            cleft_label2 = 7
+        # Get mask labels for this bounding box
+        labels = get_mask_labels(bbox_num)
+        mito_label = labels['mito_label']
+        vesicle_label = labels['vesicle_label']
+        cleft_label = labels['cleft_label']
+        cleft_label2 = labels['cleft_label2']
 
         # Original coordinates 
         cx, cy, cz = central_coord

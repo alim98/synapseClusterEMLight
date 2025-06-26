@@ -11,6 +11,8 @@ from synapse.dl.mask_utils import (
     get_largest_component_mask
 )
 
+from synapse.dl.mask_labels import get_mask_labels
+
 __all__ = [
     'SynapseDataLoader',
     'Synapse3DProcessor', 
@@ -18,5 +20,7 @@ __all__ = [
     'get_closest_component_mask',
     'get_component_center_of_mass',
     'filter_components_by_size',
-    'get_largest_component_mask'
+    'get_largest_component_mask',
+    'get_mask_labels',
+    
 ] 

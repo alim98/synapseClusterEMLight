@@ -8,10 +8,7 @@ from synapse.dl.dataloader import SynapseDataLoader
 class SynapseDataset(Dataset):
     def __init__(self, vol_data_dict: dict, synapse_df: pd.DataFrame, processor,
                  segmentation_type: int, subvol_size: int = 80, num_frames: int = 80,
-                 alpha: float = 0.3, normalize_across_volume: bool = True, 
-                 smart_crop: bool = True, presynapse_weight: float = 0.7,
-                 normalize_presynapse_size: bool = True, target_percentage: float = None,
-                 size_tolerance: float = 0.1):
+                 alpha: float = 0.3, normalize_across_volume: bool = True, ):
         self.vol_data_dict = vol_data_dict
         self.synapse_df = synapse_df.reset_index(drop=True)
         self.processor = processor
@@ -20,12 +17,6 @@ class SynapseDataset(Dataset):
         self.num_frames = num_frames
         self.alpha = alpha
         self.data_loader = None
-        self.normalize_across_volume = normalize_across_volume
-        self.smart_crop = smart_crop
-        self.presynapse_weight = presynapse_weight
-        self.normalize_presynapse_size = normalize_presynapse_size
-        self.target_percentage = target_percentage
-        self.size_tolerance = size_tolerance
         # Ensure the processor's normalization setting matches
         if hasattr(self.processor, 'normalize_volume'):
             self.processor.normalize_volume = normalize_across_volume
@@ -60,17 +51,9 @@ class SynapseDataset(Dataset):
             alpha=self.alpha,
             bbox_name=bbox_name,
             normalize_across_volume=True,
-            smart_crop=self.smart_crop,
-            presynapse_weight=self.presynapse_weight,
-            normalize_presynapse_size=self.normalize_presynapse_size,
-            target_percentage=self.target_percentage,
-            size_tolerance=self.size_tolerance,
+            
         )
         
-        # Handle case when overlaid_cube is None (sample discarded)
-        if overlaid_cube is None:
-            print(f"Sample {bbox_name} was discarded during processing. Returning None instead of zeros.")
-            return None
         
         # Extract frames from the overlaid cube
         frames = [overlaid_cube[..., z] for z in range(overlaid_cube.shape[3])]

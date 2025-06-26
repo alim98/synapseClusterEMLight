@@ -33,18 +33,7 @@ class SynapseConfig:
         self.dbscan_min_samples = 5  # Default min_samples parameter for DBSCAN
         self.results_dir='results'
         self.model_path='hemibrain_production.checkpoint'
-        # Segmentation Type: 10
-        #   Alpha: 1
-        #   Extraction Method: stage_specific
-        #   Layer Number: 20
-        #   Normalize Volume: False
-        #   Normalize Across Volume: True
-        #   Smart Crop: True
-        #   Presynapse Weight: 0.7
-        #   Normalize Presynapse Size: True
-        #   Target Percentage: None
-        #   Size Tolerance: 0.1
-        #   Absolute Difference: 0.00000578
+        
         # Feature extraction parameters
         self.extraction_method = "stage_specific"  # Options: "standard" or "stage_specific"
         self.layer_num = 20  # Layer to extract features from when using stage_specific method
