@@ -8,13 +8,9 @@ from scipy.ndimage import label
 from torchvision import transforms
 import matplotlib.pyplot as plt
 
-# Import the config
 from synapse.utils.config import config
-# Import mask utilities
 from synapse.dl.mask_utils import get_closest_component_mask
-# Import segmentation type processor
 from synapse.dl.segtype_processor import process_segmentation_type
-# Import mask label configuration
 from synapse.dl.mask_labels import get_mask_labels
 
 class Synapse3DProcessor:
@@ -22,13 +18,12 @@ class Synapse3DProcessor:
         self.transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize(size),
-            # Explicitly convert to grayscale with one output channel
             transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
         ])
         self.mean = mean
         self.std = std
-        self.normalize_volume = True  # New flag to control volume-wide normalization
+        self.normalize_volume = True
 
     def __call__(self, frames, return_tensors=None):
         processed_frames = []
@@ -37,24 +32,19 @@ class Synapse3DProcessor:
             if len(frame.shape) > 2 and frame.shape[2] > 1:
                 if frame.shape[2] > 3:  # More than 3 channels
                     frame = frame[:, :, :3]  # Take first 3 channels
-                # Will be converted to grayscale by the transform
             
             processed_frame = self.transform(frame)
             processed_frames.append(processed_frame)
             
         pixel_values = torch.stack(processed_frames)
         
-        # Ensure we have a single channel
         if pixel_values.shape[1] != 1:
-            # This should not happen due to transforms.Grayscale, but just in case
             pixel_values = pixel_values.mean(dim=1, keepdim=True)
         
-        # Apply volume-wide normalization to ensure consistent grayscale values across slices
         if self.normalize_volume:
-            # Method 1: Min-max normalization across the entire volume
             min_val = pixel_values.min()
             max_val = pixel_values.max()
-            if max_val > min_val:  # Avoid division by zero
+            if max_val > min_val:
                 pixel_values = (pixel_values - min_val) / (max_val - min_val)
             
         if return_tensors == "pt":
@@ -67,7 +57,6 @@ class SynapseDataLoader:
         self.raw_base_dir = raw_base_dir
         self.seg_base_dir = seg_base_dir
         self.add_mask_base_dir = add_mask_base_dir
-        # Use provided gray_color or get from config
         self.gray_color = gray_color if gray_color is not None else config.gray_color
 
     def load_volumes(self, bbox_name: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -88,37 +77,30 @@ class SynapseDataLoader:
             return None, None, None
         
         try:
-            # Load raw volume and convert to grayscale if needed
             raw_slices = []
             multi_channel_detected = False
             for f in raw_tif_files:
                 img = iio.imread(f)
-                # Check if the image has multiple channels (RGB)
                 if len(img.shape) > 2 and img.shape[2] > 1:
                     multi_channel_detected = True
-                    # Convert RGB to grayscale using luminosity method
                     img = np.dot(img[..., :3], [0.2989, 0.5870, 0.1140])
                 raw_slices.append(img)
             raw_vol = np.stack(raw_slices, axis=0)
             
-            # Load segmentation volume and ensure it's single channel
             seg_slices = []
             for f in seg_tif_files:
                 img = iio.imread(f)
                 if len(img.shape) > 2 and img.shape[2] > 1:
                     multi_channel_detected = True
-                    # For segmentation, take first channel (labels should be consistent)
                     img = img[..., 0]
                 seg_slices.append(img.astype(np.uint32))
             seg_vol = np.stack(seg_slices, axis=0)
             
-            # Load additional mask volume and ensure it's single channel
             add_mask_slices = []
             for f in add_mask_tif_files:
                 img = iio.imread(f)
                 if len(img.shape) > 2 and img.shape[2] > 1:
                     multi_channel_detected = True
-                    # For masks, take first channel
                     img = img[..., 0]
                 add_mask_slices.append(img.astype(np.uint32))
             add_mask_vol = np.stack(add_mask_slices, axis=0)
@@ -158,8 +140,6 @@ class SynapseDataLoader:
         # Original coordinates 
         cx, cy, cz = central_coord
 
-        # Define a large temporary region to find presynapse components
-        # This region should be larger than the final bounding box to allow for shifting
         temp_half_size = subvolume_size  # Double the size for initial analysis
         temp_x_start = max(cx - temp_half_size, 0)
         temp_x_end = min(cx + temp_half_size, raw_vol.shape[2])
