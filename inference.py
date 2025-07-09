@@ -20,11 +20,7 @@ from synapse import (
     load_model_from_checkpoint,
     config
 )
-
-# Import VGG3DStageExtractor for stage-specific feature extraction
 from vgg3d_stage_extractor import VGG3DStageExtractor
-
-
 def extract_features(model, dataset, config, pooling_method='avg'):
     """
     Extract features from the model.
@@ -40,11 +36,7 @@ def extract_features(model, dataset, config, pooling_method='avg'):
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device).eval()
-
-    # Use the batch_size from the dataset if available, otherwise use 2
     batch_size = getattr(dataset, 'batch_size', 2)
-    print(f"DEBUG - Using batch_size={batch_size} for DataLoader")
-
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -55,36 +47,27 @@ def extract_features(model, dataset, config, pooling_method='avg'):
             [item[2] for item in b if item is not None]
         )
     )
-
     features = []
     metadata = []
-
-    # Default implementation ('avg' pooling)
     if pooling_method == 'avg' or not pooling_method:
         with torch.no_grad():
             for batch in tqdm(dataloader, desc="Extracting features", unit="batch"):
                 if len(batch[0]) == 0:
                     continue
-                    
                 pixels, info, names = batch
                 inputs = pixels.permute(0, 2, 1, 3, 4).to(device)
-
                 batch_features = model.features(inputs)
                 pooled_features = nn.AdaptiveAvgPool3d((1, 1, 1))(batch_features)
-
                 batch_features_np = pooled_features.cpu().numpy()
                 batch_size = batch_features_np.shape[0]
                 num_features = np.prod(batch_features_np.shape[1:])
                 batch_features_np = batch_features_np.reshape(batch_size, num_features)
-                
                 features.append(batch_features_np)
                 metadata.extend(zip(names, info))
-
         features = np.concatenate(features, axis=0)
 
-        # Create simplified metadata dataframe with only essential columns
         metadata_df = pd.DataFrame()
-        metadata_df['ID'] = range(1, len(features) + 1)  # Start from 1 for better readability
+        metadata_df['ID'] = range(1, len(features) + 1) 
 
         feature_columns = [f'feat_{i+1}' for i in range(features.shape[1])]
         features_df = pd.DataFrame(features, columns=feature_columns)
