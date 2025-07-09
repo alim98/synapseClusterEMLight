@@ -3,12 +3,12 @@ import os
 
 class SynapseConfig:
     def __init__(self):
-        self.raw_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/raw'
-        self.seg_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/seg'
-        self.add_mask_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/vesicle_cloud__syn_interface__mitochondria_annotation'
-        # self.bbox_name = ['bbox1','bbox2','bbox3','bbox4','bbox5','bbox6','bbox7']
+        self.raw_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/raw'
+        self.seg_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/seg'
+        self.add_mask_base_dir = '/teamspace/studios/this_studio/SynapseClusterEM/data/vesicle_cloud__syn_interface__mitochondria_annotation'
         self.bbox_name = ['bbox1','bbox2','bbox3','bbox4','bbox5','bbox6','bbox7']
-        self.excel_file = '/teamspace/studios/this_studio/SynapseClusterEM/data/data/'
+        # self.bbox_name = ['bbox1']
+        self.excel_file = '/teamspace/studios/this_studio/SynapseClusterEM/data/'
         self.csv_output_dir = 'results/csv_outputs'
         self.size = (80, 80)
         self.subvol_size = 80
