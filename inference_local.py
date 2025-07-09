@@ -37,10 +37,6 @@ from synapse import (
     config
 )
 
-
-from vgg3d_stage_extractor import VGG3DStageExtractor
-
-
 from inference import (
     extract_features as base_extract_features,
     extract_stage_specific_features as base_extract_stage_specific_features,

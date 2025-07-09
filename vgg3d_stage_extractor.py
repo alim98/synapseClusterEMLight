@@ -80,7 +80,7 @@ class VGG3DStageExtractor:
     def extract_layer(self, layer_number, inputs):
         """
         Extract features from a specific layer of the VGG3D model.
-        
+        Same idea but addresses layers by absolute index.
         Args:
             layer_number (int): The layer number to extract features from (0-based indexing)
             inputs (torch.Tensor): The input tensor to the model

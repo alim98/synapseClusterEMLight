@@ -12,6 +12,7 @@ from pathlib import Path
 from synapse import config
 from synapse_sampling.adapter import ConnectomeDataset
 from synapse.dl.dataloader import Synapse3DProcessor
+from inference import extract_and_save_features
 
 class SynapsePipeline:
 
@@ -75,7 +76,6 @@ class SynapsePipeline:
         output_dir = os.path.join(self.results_parent_dir, f"features_{pooling_method}")
         os.makedirs(output_dir, exist_ok=True)
         
-        from inference import extract_and_save_features
         features_path = extract_and_save_features(
             self.model, 
             self.dataset, 
@@ -91,7 +91,6 @@ class SynapsePipeline:
         if isinstance(features_path, pd.DataFrame):
             # If features_path is a DataFrame, save it directly
             backup_path = os.path.join(output_dir, f"backup_features_{pooling_method}.csv")
-            print(f"Saving backup features to: {backup_path}")
             features_path.to_csv(backup_path, index=False)
             self.features_df = features_path
         elif isinstance(features_path, str):
@@ -104,13 +103,6 @@ class SynapsePipeline:
         else:
             print("Unexpected type for features_path, creating empty DataFrame")
             self.features_df = pd.DataFrame()
-            
-        # Double-check features_df exists and has data
-        if not isinstance(self.features_df, pd.DataFrame) or self.features_df.empty:
-            print("Warning: Features DataFrame is empty or not created properly")
-        else:
-            print(f"Features DataFrame has {len(self.features_df)} rows and {len(self.features_df.columns)} columns")
-            
         return self.features_df
     
     def run_pipeline(self, pooling_method='avg'):
