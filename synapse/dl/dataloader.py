@@ -259,8 +259,7 @@ class SynapseDataLoader:
             # Print for debugging
             # print(f"Per-slice normalization: shape of mins={mins.shape}, maxs={maxs.shape}")
 
-        # Convert to RGB here ONLY for visualization purposes
-        # The data processing pipeline uses grayscale (1-channel) format
+
         raw_rgb = np.repeat(normalized[..., np.newaxis], 3, axis=-1)
         mask_factor = sub_combined_mask[..., np.newaxis]
 

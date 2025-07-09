@@ -1,18 +1,6 @@
 # rotation_experiment.py
 """Rotation Embedding Drift Experiment
 
-This script performs the following steps:
-1. Loads full resolution raw volume + segmentation + additional mask volumes for each bbox.
-2. Rotates the volumes by a configurable list of 3-D angles.
-3. Crops the SAME sub-cubes as the normal inference data-loader (using SynapseDataset).
-4. Extracts embedding vectors with the existing VGG3D checkpoint.
-5. Saves per-angle feature CSVs, combined UMAP visualisation and pairwise distance statistics.
-
-All heavy-lifting utilities already exist in the code-base. We reuse them rather than re-implementing:
-• SynapseDataLoader / SynapseDataset for cropping & pre-processing
-• inference_local.extract_features / extract_stage_specific_features for checkpoint inference
-• synapse.utils.config for hyper-parameters.
-
 Run:
 python -m synapse.experiment_setup.rotation_experiment \
        --angles "0,15,30,45,60" \
@@ -36,12 +24,10 @@ import pandas as pd
 import torch
 from sklearn.decomposition import PCA
 
-# Re-use existing project modules -------------------------------------------------
-from synapse.utils.config import config  # global config singleton
+from synapse.utils.config import config  
 from synapse.dl.dataloader import SynapseDataLoader, Synapse3DProcessor
 from synapse.dl.dataset import SynapseDataset
 
-# inference_local already wires up VGG3D + feature extraction helpers
 from inference_local import (
     VGG3D as load_vgg3d,
     extract_features,
@@ -69,46 +55,6 @@ def setup_logger(log_path: str):
     logger.addHandler(fh)
 
 
-def rotate_volume(volume: np.ndarray, angle: float, axes: Tuple[int, int]=(1, 2), order: int = 1) -> np.ndarray:
-    """Rotate a 3-D volume around given axes using scipy.ndimage.rotate.
-
-    Parameters
-    ----------
-    volume : np.ndarray
-        The 3-D array to rotate.
-    angle : float
-        Angle in degrees.
-    axes : Tuple[int, int]
-        The plane defined by these two axes will be rotated.
-        Default (1,2) rotates in the XY-plane (around Z).
-    order : int
-        Interpolation order: 1 = trilinear, 0 = nearest-neighbor.
-    """
-    # reshape=False keeps original shape (575³) avoiding extra padding/cropping
-    rotated = ndimage.rotate(
-        volume,
-        angle=angle,
-        axes=axes,
-        reshape=False,
-        order=order,
-        mode="constant",
-        cval=0,
-    )
-    return rotated.astype(volume.dtype)
-
-
-def save_volume_h5(path: str, dataset_name: str, vol: np.ndarray):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with h5py.File(path, "w") as f:
-        f.create_dataset(dataset_name, data=vol, compression="gzip")
-
-
-def read_single_volume_h5(path: str) -> np.ndarray:
-    """Read the sole dataset contained in *path* (created via ``save_volume_h5``)."""
-    with h5py.File(path, "r") as f:
-        # Each file only contains one dataset (raw / seg / add_mask)
-        first_key = next(iter(f.keys()))
-        return f[first_key][:]
 
 
 def create_gif_from_volume(
@@ -359,20 +305,15 @@ class RotatedCubeDataset(torch.utils.data.Dataset):
 
 
 def main(args):
-    # ---------------------------------------------------------------------
-    # Parse & update global config (isolate from our own CLI flags) -------
-    # ---------------------------------------------------------------------
+
     original_argv = sys.argv.copy()
     try:
-        # Keep only the program name so Synapse config uses default values or env vars.
         sys.argv = [sys.argv[0]]
-        config.parse_args()  # Populate config with its defaults (no interference)
+        config.parse_args()  
     finally:
-        # Restore full argv for our own argument parsing if needed later
         sys.argv = original_argv
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Result dirs
     base_results_dir = os.path.join(config.results_dir, "rotation_experiment")
     os.makedirs(base_results_dir, exist_ok=True)
     setup_logger(os.path.join(base_results_dir, "experiment.log"))
@@ -562,9 +503,7 @@ def main(args):
             except Exception as e:
                 logging.warning(f"Could not save subvolume GIF for angle {angle}: {e}")
 
-    # ------------------------------------------------------------------
-    # Combine & Analyse -------------------------------------------------
-    # ------------------------------------------------------------------
+    # Combine & Analyse 
     logging.info("Combining feature dataframes …")
     combined_df = pd.concat(combined_features, ignore_index=True)
     combined_csv = os.path.join(base_results_dir, "features_all_angles.csv")

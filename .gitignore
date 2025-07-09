@@ -82,3 +82,6 @@ MedicalNet
 synapse/scripts/*
 data_2/*
 umap_results/*
+
+run_20250518_200339/
+todo.md

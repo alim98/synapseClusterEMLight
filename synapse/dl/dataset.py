@@ -17,7 +17,6 @@ class SynapseDataset(Dataset):
         self.num_frames = num_frames
         self.alpha = alpha
         self.data_loader = None
-        # Ensure the processor's normalization setting matches
         if hasattr(self.processor, 'normalize_volume'):
             self.processor.normalize_volume = normalize_across_volume
 
@@ -55,19 +54,15 @@ class SynapseDataset(Dataset):
         )
         
         
-        # Extract frames from the overlaid cube
         frames = [overlaid_cube[..., z] for z in range(overlaid_cube.shape[3])]
         
-        # Ensure we have the correct number of frames
         if len(frames) < self.num_frames:
-            # Duplicate the last frame to reach the desired number
             frames += [frames[-1]] * (self.num_frames - len(frames))
         elif len(frames) > self.num_frames:
-            # Sample frames evenly across the volume
             indices = np.linspace(0, len(frames)-1, self.num_frames, dtype=int)
             frames = [frames[i] for i in indices]
 
-        # Process frames and get pixel values
+        
         inputs = self.processor(frames, return_tensors="pt")
         
         return inputs["pixel_values"].squeeze(0).float(), syn_info, bbox_name
