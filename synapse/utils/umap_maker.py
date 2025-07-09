@@ -148,342 +148,143 @@ def create_bbox_colored_umap(features_df, output_dir, reuse_umap_results=None, n
 
     return df, umap_results
 
-def sample_points_from_umap(features_df, n_samples=100, method='spatial_grid'):
-    has_3d = 'umap_z' in features_df.columns 
-    n_samples = min(n_samples, len(features_df))
+def sample_points_from_umap(features_df, n_samples: int = 100, method: str = 'spatial_grid'):
+    """Return a subsample of *features_df* and a boolean mask.
+
+    Parameters
+    ----------
+    features_df : pd.DataFrame  – must contain ``umap_x`` and ``umap_y`` (and optionally ``umap_z``).
+    n_samples   : int          – desired number of points (capped at dataset size).
+    method      : {'random', 'spatial_grid', 'density_aware'}
+    """
+    if {'umap_x', 'umap_y'}.difference(features_df.columns):
+        raise ValueError("DataFrame must contain 'umap_x' and 'umap_y' columns")
+
+    total = len(features_df)
+    n_samples = min(n_samples, total)
+    has_3d = 'umap_z' in features_df.columns
+
+    # Helper to extract coordinates once
+    coord_cols = ['umap_x', 'umap_y'] + (['umap_z'] if has_3d else [])
+    coords = features_df[coord_cols].values
+
     if method == 'random':
-        sampled_indices = np.random.choice(len(features_df), size=n_samples, replace=False)
-    elif method == 'spatial_grid':   
-        if has_3d:    
-            x_coords = features_df['umap_x'].values
-            y_coords = features_df['umap_y'].values
-            z_coords = features_df['umap_z'].values
-            grid_size = int(np.ceil(n_samples ** (1/3)))  
-            x_bins = np.linspace(x_coords.min(), x_coords.max(), grid_size + 1)
-            y_bins = np.linspace(y_coords.min(), y_coords.max(), grid_size + 1)
-            z_bins = np.linspace(z_coords.min(), z_coords.max(), grid_size + 1)
-            sampled_indices = []
-            samples_per_cell = max(1, n_samples // (grid_size ** 3))
-            for i in range(grid_size):
-                for j in range(grid_size):
-                    for k in range(grid_size):
-                        
-                        mask = ((x_coords >= x_bins[i]) & (x_coords < x_bins[i+1]) &
-                               (y_coords >= y_bins[j]) & (y_coords < y_bins[j+1]) &
-                               (z_coords >= z_bins[k]) & (z_coords < z_bins[k+1]))
-                        
-                        cell_indices = np.where(mask)[0]
-                        if len(cell_indices) > 0:
-                            
-                            n_from_cell = min(samples_per_cell, len(cell_indices))
-                            selected = np.random.choice(cell_indices, size=n_from_cell, replace=False)
-                            sampled_indices.extend(selected)
-        else:
-            x_coords = features_df['umap_x'].values
-            y_coords = features_df['umap_y'].values
-            grid_size = int(np.ceil(np.sqrt(n_samples)))  
-            x_bins = np.linspace(x_coords.min(), x_coords.max(), grid_size + 1)
-            y_bins = np.linspace(y_coords.min(), y_coords.max(), grid_size + 1)
-            sampled_indices = []
-            samples_per_cell = max(1, n_samples // (grid_size ** 2))
-            for i in range(grid_size):
-                for j in range(grid_size):
-                    mask = ((x_coords >= x_bins[i]) & (x_coords < x_bins[i+1]) &
-                           (y_coords >= y_bins[j]) & (y_coords < y_bins[j+1]))
-                    cell_indices = np.where(mask)[0]
-                    if len(cell_indices) > 0:
-                        n_from_cell = min(samples_per_cell, len(cell_indices))
-                        selected = np.random.choice(cell_indices, size=n_from_cell, replace=False)
-                        sampled_indices.extend(selected)
-        sampled_indices = list(set(sampled_indices))  
-        if len(sampled_indices) < n_samples:
-            remaining_indices = [i for i in range(len(features_df)) if i not in sampled_indices]
-            additional_needed = n_samples - len(sampled_indices)
-            if len(remaining_indices) >= additional_needed:
-                additional = np.random.choice(remaining_indices, size=additional_needed, replace=False)
-                sampled_indices.extend(additional)
-        if len(sampled_indices) > n_samples:
-            sampled_indices = np.random.choice(sampled_indices, size=n_samples, replace=False)
+        idx = np.random.choice(total, n_samples, replace=False)
+
     elif method == 'density_aware':
-        if has_3d:
-            coords = features_df[['umap_x', 'umap_y', 'umap_z']].values
-        else:
-            coords = features_df[['umap_x', 'umap_y']].values
-        k = min(20, len(features_df) // 10)  
-        nbrs = NearestNeighbors(n_neighbors=k).fit(coords)
-        distances, _ = nbrs.kneighbors(coords)
-        density_scores = distances[:, -1]  
-        probabilities = density_scores / density_scores.sum()
-        sampled_indices = np.random.choice(
-            len(features_df), 
-            size=n_samples, 
-            replace=False, 
-            p=probabilities
-        )
-    mask = np.zeros(len(features_df), dtype=bool)
-    mask[sampled_indices] = True
-    sampled_df = features_df.iloc[sampled_indices].copy()
+        k = max(5, min(20, total // 10))
+        dists, _ = NearestNeighbors(n_neighbors=k).fit(coords).kneighbors(coords)
+        probs = dists[:, -1]
+        probs /= probs.sum()
+        idx = np.random.choice(total, n_samples, replace=False, p=probs)
+
+    elif method == 'spatial_grid':
+        dims = coords.shape[1]
+        g = int(np.ceil(n_samples ** (1 / dims)))  # grid resolution per axis
+        bins = [np.linspace(coords[:, d].min(), coords[:, d].max(), g + 1) for d in range(dims)]
+        # Encode a unique cell id per point
+        cell_id = np.zeros(total, dtype=int)
+        mult = 1
+        for d in range(dims):
+            cell_id += (np.digitize(coords[:, d], bins[d]) - 1) * mult
+            mult *= g
+        samples_per_cell = max(1, n_samples // (g ** dims))
+        idx = []
+        for cid in np.unique(cell_id):
+            pts = np.where(cell_id == cid)[0]
+            take = min(samples_per_cell, len(pts))
+            if take:
+                idx.extend(np.random.choice(pts, take, replace=False))
+        # Fill up / trim to exact n_samples
+        if len(idx) < n_samples:
+            rest = np.setdiff1d(np.arange(total), idx, assume_unique=True)
+            idx.extend(np.random.choice(rest, n_samples - len(idx), replace=False))
+        if len(idx) > n_samples:
+            idx = np.random.choice(idx, n_samples, replace=False)
+        idx = np.asarray(idx)
+    else:
+        raise ValueError(f"Unknown sampling method: {method}")
+
+    mask = np.zeros(total, dtype=bool)
+    mask[idx] = True
+    sampled_df = features_df.iloc[idx].copy()
     sampled_df['is_sampled'] = True
     return sampled_df, mask
 
-def create_umap_with_sampled_crosses(features_df, sampled_mask, output_dir, 
-                                   n_dimensions=2, output_format='both', 
-                                   cross_size=100, cross_color='red'):
-    if 'umap_x' not in features_df.columns or 'umap_y' not in features_df.columns:
-        raise ValueError("DataFrame must contain UMAP coordinates")
-    
-    
-    if n_dimensions not in [2, 3]:
+def create_umap_with_sampled_crosses(
+    features_df,
+    sampled_mask,
+    output_dir,
+    n_dimensions: int = 2,
+    output_format: str = 'both',
+    cross_size: int = 100,
+    cross_color: str = 'red',
+):
+    """Overlay a subset of *features_df* (given by *sampled_mask*) as crosses on a UMAP scatter plot."""
+    if n_dimensions not in (2, 3):
         raise ValueError("n_dimensions must be 2 or 3")
-    if output_format not in ['html', 'png', 'both']:
+    if output_format not in {"html", "png", "both"}:
         raise ValueError("output_format must be 'html', 'png', or 'both'")
-    
-    has_3d = 'umap_z' in features_df.columns and n_dimensions == 3
-    
-    
+
+    df = features_df.copy()
+    df['is_sampled'] = sampled_mask
+
+    # Colour mapping for bbox categories ---------------------------------------------------
+    BBOX_LIST = [f"bbox{i}" for i in range(1, 8)]
     bbox_colors = {
-        'bbox1': '#FF0000',  
-        'bbox2': '#00FF00',  
-        'bbox3': '#0000FF',  
-        'bbox4': '#FFA500',  
-        'bbox5': '#800080',  
-        'bbox6': '#00FFFF',  
-        'bbox7': '#FFD700'   
+        **{b: c for b, c in zip(BBOX_LIST, ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#800080", "#00FFFF", "#FFD700"])},
+        "other": "#808080",
     }
-    
-    
-    features_df = features_df.copy()
-    
-    
-    def categorize_bbox(bbox_val):
-        bbox_str = str(bbox_val).lower()
-        if bbox_str in ['bbox1', 'bbox2', 'bbox3', 'bbox4', 'bbox5', 'bbox6', 'bbox7']:
-            return bbox_str
-        else:
-            return 'other'
-    
-    if 'bbox' in features_df.columns:
-        features_df['bbox_color'] = features_df['bbox'].apply(categorize_bbox)
-    else:
-        features_df['bbox_color'] = 'other'
-    
-    bbox_colors_extended = bbox_colors.copy()
-    bbox_colors_extended['other'] = '#808080'  
-    
-    
-    sampled_df = features_df[sampled_mask].copy()
-    non_sampled_df = features_df[~sampled_mask].copy()
-    
-    print(f"Plotting {len(non_sampled_df)} background points and {len(sampled_df)} sampled crosses")
-    
-    
+    df['bbox_color'] = df.get('bbox', 'other').astype(str).str.lower().where(lambda s: s.isin(BBOX_LIST), 'other')
+
+    has_3d = 'umap_z' in df.columns and n_dimensions == 3
+    px_args = dict(
+        color='bbox_color',
+        color_discrete_map=bbox_colors,
+        opacity=0.6,
+        hover_data=[c for c in ['bbox', 'Var1'] if c in df.columns],
+    )
+
+    # ------------------------------------------------------------------ Plot non-sampled
     if has_3d:
-        fig = go.Figure()
-        
-        
-        for bbox_cat in ['other'] + ['bbox1', 'bbox2', 'bbox3', 'bbox4', 'bbox5', 'bbox6', 'bbox7']:
-            mask = non_sampled_df['bbox_color'] == bbox_cat
-            if mask.any():
-                subset = non_sampled_df[mask]
-                opacity = 0.3 if bbox_cat == 'other' else 0.6
-                size = 3 if bbox_cat == 'other' else 4
-                fig.add_trace(go.Scatter3d(
-                    x=subset['umap_x'],
-                    y=subset['umap_y'],
-                    z=subset['umap_z'],
-                    mode='markers',
-                    marker=dict(color=bbox_colors_extended[bbox_cat], size=size, opacity=opacity),
-                    name=f'{bbox_cat} (background)',
-                    showlegend=True,
-                    hovertemplate='<b>%{text}</b><br>UMAP1: %{x}<br>UMAP2: %{y}<br>UMAP3: %{z}<extra></extra>',
-                    text=subset.get('Var1', subset.index)
-                ))
-        
-        
-        if len(sampled_df) > 0:
-            fig.add_trace(go.Scatter3d(
-                x=sampled_df['umap_x'],
-                y=sampled_df['umap_y'],
-                z=sampled_df['umap_z'],
-                mode='markers',
-                marker=dict(
-                    color=cross_color,
-                    size=cross_size//10,  
-                    symbol='x',
-                    opacity=0.9,
-                    line=dict(width=2)
-                ),
-                name=f'Sampled ({len(sampled_df)} points)',
-                showlegend=True,
-                hovertemplate='<b>SAMPLED: %{text}</b><br>UMAP1: %{x}<br>UMAP2: %{y}<br>UMAP3: %{z}<extra></extra>',
-                text=sampled_df.get('Var1', sampled_df.index)
-            ))
-        
-        
-        fig.update_layout(
-            scene=dict(
-                xaxis_title='UMAP Dimension 1',
-                yaxis_title='UMAP Dimension 2',
-                zaxis_title='UMAP Dimension 3'
-            ),
-            title=f'3D UMAP with {len(sampled_df)} Randomly Sampled Points (crosses)',
-            legend=dict(title="Categories", yanchor="top", y=0.99, xanchor="right", x=0.99),
-            margin=dict(l=0, r=0, b=0, t=50),
-            hovermode='closest'
+        fig = px.scatter_3d(df[~df['is_sampled']], x='umap_x', y='umap_y', z='umap_z', **px_args)
+        # Overlay sampled crosses
+        fig.add_scatter3d(
+            x=df.loc[df['is_sampled'], 'umap_x'],
+            y=df.loc[df['is_sampled'], 'umap_y'],
+            z=df.loc[df['is_sampled'], 'umap_z'],
+            mode='markers',
+            marker=dict(symbol='x', color=cross_color, size=cross_size // 10, line=dict(width=2)),
+            name=f'Sampled ({df["is_sampled"].sum()})',
         )
-        
-        filename_base = f"umap3d_with_sampled_crosses_{len(sampled_df)}"
-    
-    else:  
-        fig = go.Figure()
-        
-        
-        for bbox_cat in ['other'] + ['bbox1', 'bbox2', 'bbox3', 'bbox4', 'bbox5', 'bbox6', 'bbox7']:
-            mask = non_sampled_df['bbox_color'] == bbox_cat
-            if mask.any():
-                subset = non_sampled_df[mask]
-                opacity = 0.4 if bbox_cat == 'other' else 0.7
-                size = 4 if bbox_cat == 'other' else 5
-                fig.add_trace(go.Scatter(
-                    x=subset['umap_x'],
-                    y=subset['umap_y'],
-                    mode='markers',
-                    marker=dict(color=bbox_colors_extended[bbox_cat], size=size, opacity=opacity),
-                    name=f'{bbox_cat} (background)',
-                    showlegend=True,
-                    hovertemplate='<b>%{text}</b><br>UMAP1: %{x}<br>UMAP2: %{y}<extra></extra>',
-                    text=subset.get('Var1', subset.index)
-                ))
-        
-        
-        if len(sampled_df) > 0:
-            fig.add_trace(go.Scatter(
-                x=sampled_df['umap_x'],
-                y=sampled_df['umap_y'],
-                mode='markers',
-                marker=dict(
-                    color=cross_color,
-                    size=cross_size//5,  
-                    symbol='x',
-                    opacity=0.9,
-                    line=dict(width=3)
-                ),
-                name=f'Sampled ({len(sampled_df)} points)',
-                showlegend=True,
-                hovertemplate='<b>SAMPLED: %{text}</b><br>UMAP1: %{x}<br>UMAP2: %{y}<extra></extra>',
-                text=sampled_df.get('Var1', sampled_df.index)
-            ))
-        
-        
-        fig.update_layout(
-            xaxis_title='UMAP Dimension 1',
-            yaxis_title='UMAP Dimension 2',
-            title=f'2D UMAP with {len(sampled_df)} Randomly Sampled Points (crosses)',
-            legend=dict(title="Categories", yanchor="top", y=0.99, xanchor="right", x=0.99),
-            margin=dict(l=0, r=0, b=0, t=50),
-            hovermode='closest'
+        filename_base = f"umap3d_with_sampled_crosses_{df['is_sampled'].sum()}"
+    else:
+        fig = px.scatter(df[~df['is_sampled']], x='umap_x', y='umap_y', **px_args)
+        fig.update_yaxes(scaleanchor='x', scaleratio=1)
+        fig.add_scatter(
+            x=df.loc[df['is_sampled'], 'umap_x'],
+            y=df.loc[df['is_sampled'], 'umap_y'],
+            mode='markers',
+            marker=dict(symbol='x', color=cross_color, size=cross_size // 5, line=dict(width=2)),
+            name=f'Sampled ({df["is_sampled"].sum()})',
         )
-        
-        filename_base = f"umap2d_with_sampled_crosses_{len(sampled_df)}"
-    
-    
-    if output_format in ['html', 'both']:
-        output_path_html = os.path.join(output_dir, f"{filename_base}.html")
+        filename_base = f"umap2d_with_sampled_crosses_{df['is_sampled'].sum()}"
+
+    fig.update_layout(title=f"{n_dimensions}D UMAP with sampled crosses", legend_title="Bounding Box")
+
+    # ------------------------------------------------------------------ Output
+    os.makedirs(output_dir, exist_ok=True)
+    if output_format in {"html", "both"}:
+        fig.write_html(os.path.join(output_dir, f"{filename_base}.html"))
+    if output_format in {"png", "both"}:
         try:
-            fig.write_html(output_path_html)
-            print(f"Saved HTML: {output_path_html}")
+            fig.write_image(os.path.join(output_dir, f"{filename_base}.png"), scale=2)
         except Exception as e:
-            print(f"Error saving HTML: {str(e)}")
-    
-    if output_format in ['png', 'both']:
-        try:
-            
-            import matplotlib.pyplot as plt
-            
-            if has_3d:
-                fig_mpl = plt.figure(figsize=(14, 10))
-                ax = fig_mpl.add_subplot(111, projection='3d')
-                
-                
-                for bbox_cat in ['other'] + ['bbox1', 'bbox2', 'bbox3', 'bbox4', 'bbox5', 'bbox6', 'bbox7']:
-                    mask = non_sampled_df['bbox_color'] == bbox_cat
-                    if mask.any():
-                        subset = non_sampled_df[mask]
-                        alpha = 0.3 if bbox_cat == 'other' else 0.6
-                        size = 8 if bbox_cat == 'other' else 12
-                        ax.scatter(
-                            subset['umap_x'], subset['umap_y'], subset['umap_z'],
-                            c=bbox_colors_extended[bbox_cat], 
-                            label=f'{bbox_cat} (background)',
-                            alpha=alpha, s=size
-                        )
-                
-                
-                if len(sampled_df) > 0:
-                    ax.scatter(
-                        sampled_df['umap_x'], sampled_df['umap_y'], sampled_df['umap_z'],
-                        c=cross_color, marker='x', s=cross_size, 
-                        label=f'Sampled ({len(sampled_df)} points)', 
-                        alpha=0.9, linewidths=2
-                    )
-                
-                ax.set_xlabel('UMAP Dimension 1')
-                ax.set_ylabel('UMAP Dimension 2')
-                ax.set_zlabel('UMAP Dimension 3')
-                ax.set_title(f'3D UMAP with {len(sampled_df)} Randomly Sampled Points (crosses)')
-                
-            else:  
-                fig_mpl, ax = plt.subplots(figsize=(14, 10))
-                
-                
-                for bbox_cat in ['other'] + ['bbox1', 'bbox2', 'bbox3', 'bbox4', 'bbox5', 'bbox6', 'bbox7']:
-                    mask = non_sampled_df['bbox_color'] == bbox_cat
-                    if mask.any():
-                        subset = non_sampled_df[mask]
-                        alpha = 0.4 if bbox_cat == 'other' else 0.7
-                        size = 15 if bbox_cat == 'other' else 20
-                        ax.scatter(
-                            subset['umap_x'], subset['umap_y'],
-                            c=bbox_colors_extended[bbox_cat], 
-                            label=f'{bbox_cat} (background)',
-                            alpha=alpha, s=size
-                        )
-                
-                
-                if len(sampled_df) > 0:
-                    ax.scatter(
-                        sampled_df['umap_x'], sampled_df['umap_y'],
-                        c=cross_color, marker='x', s=cross_size, 
-                        label=f'Sampled ({len(sampled_df)} points)', 
-                        alpha=0.9, linewidths=3
-                    )
-                
-                ax.set_xlabel('UMAP Dimension 1')
-                ax.set_ylabel('UMAP Dimension 2')
-                ax.set_title(f'2D UMAP with {len(sampled_df)} Randomly Sampled Points (crosses)')
-            
-            
-            ax.legend(title='Categories', loc='center left', bbox_to_anchor=(1, 0.5))
-            plt.tight_layout()
-            
-            
-            output_path_png = os.path.join(output_dir, f"{filename_base}.png")
-            plt.savefig(output_path_png, dpi=300, bbox_inches='tight')
-            print(f"Saved PNG: {output_path_png}")
-            
-            output_path_pdf = os.path.join(output_dir, f"{filename_base}.pdf")
-            plt.savefig(output_path_pdf, bbox_inches='tight')
-            
-            plt.close(fig_mpl)
-            
-        except Exception as e:
-            print(f"Error creating matplotlib plot: {str(e)}")
-    
-    
-    sampled_info_path = os.path.join(output_dir, f"sampled_points_{len(sampled_df)}.csv")
-    sampled_df.to_csv(sampled_info_path, index=False)
-    print(f"Saved sampled points info: {sampled_info_path}")
-    
+            print(f"PNG export failed – {e}")
+
+    # Save sampled info
+    sampled_df = df[df['is_sampled']].copy()
+    sampled_df.to_csv(os.path.join(output_dir, f"sampled_points_{len(sampled_df)}.csv"), index=False)
     return sampled_df
 
 def create_umap_heatmaps(features_df, output_dir, n_dimensions=2, 

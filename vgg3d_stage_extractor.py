@@ -7,8 +7,6 @@ class VGG3DStageExtractor:
     A high-level interface for extracting features from specific stages of the VGG3D model.
     
     This class allows extracting features from different stages of the VGG3D model
-    without having to implement any methods. Users should implement the necessary
-    functionality in their own code.
     
     Usage example:
     -------------
@@ -25,11 +23,8 @@ class VGG3DStageExtractor:
             model: A VGG3D model instance
         """
         self.model = model
-        self.model.eval()  # Set model to evaluation mode
+        self.model.eval()  
         
-        # Define stage boundaries - indices in the features Sequential module
-        # Each stage ends with a MaxPool3D operation
-        # This is based on the typical VGG architecture with 4 stages
         self.stage_boundaries = self._identify_stage_boundaries()
         
     def _identify_stage_boundaries(self):

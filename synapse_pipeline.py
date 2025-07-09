@@ -14,18 +14,8 @@ from synapse_sampling.adapter import ConnectomeDataset
 from synapse.dl.dataloader import Synapse3DProcessor
 
 class SynapsePipeline:
-    """
-    Simplified pipeline class that only uses connectome dataloader 
-    and extracts features using VGG3D.
-    """
-    
+
     def __init__(self, config_obj=None):
-        """
-        Initialize the pipeline with configuration.
-        
-        Args:
-            config_obj: Configuration object or None to use default config
-        """
         self.config = config_obj if config_obj else config
         self.model = None
         self.dataset = None
@@ -33,9 +23,6 @@ class SynapsePipeline:
         self.results_parent_dir = None
         
     def create_results_directory(self):
-        """
-        Create a timestamped parent directory for all results from this run.
-        """
         if hasattr(self.config, 'results_dir') and self.config.results_dir:
             results_base_dir = self.config.results_dir
         else:
@@ -51,24 +38,12 @@ class SynapsePipeline:
         return self.results_parent_dir
         
     def load_data(self):
-        """
-        Load data using the ConnectomeDataset
-        """
         self.processor = Synapse3DProcessor(size=self.config.size)
         self.processor.normalize_volume = False
-        
-        # Use connectome dataset with separate num_samples and batch_size
         num_samples = getattr(self.config, 'connectome_num_samples', 100)
         batch_size = getattr(self.config, 'connectome_batch_size', 10)
         policy = getattr(self.config, 'connectome_policy', 'dummy')
         verbose = getattr(self.config, 'connectome_verbose', False)
-        
-        # Add debugging prints
-        print(f"DEBUG - Loading dataset with:")
-        print(f"  num_samples: {num_samples}")
-        print(f"  batch_size: {batch_size}")
-        print(f"  policy: {policy}")
-        print(f"  verbose: {verbose}")
         
         self.dataset = ConnectomeDataset(
             processor=self.processor,
@@ -100,7 +75,6 @@ class SynapsePipeline:
         output_dir = os.path.join(self.results_parent_dir, f"features_{pooling_method}")
         os.makedirs(output_dir, exist_ok=True)
         
-        # Extract features and save them
         from inference import extract_and_save_features
         features_path = extract_and_save_features(
             self.model, 
